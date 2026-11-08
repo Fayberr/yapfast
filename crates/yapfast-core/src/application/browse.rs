@@ -77,7 +77,7 @@ impl Application {
             && !self.state.nav_walking
         {
             self.state
-                .record_visit(previous, &Place::Browse(browse.server.clone()));
+                .record_visit(previous, &HistoryPlace::Browse(browse.server.clone()));
         }
         effects
     }

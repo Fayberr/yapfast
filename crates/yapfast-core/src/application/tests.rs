@@ -10964,7 +10964,10 @@ fn back_and_forward_return_to_the_screens_of_the_dm_list() {
     app.dispatch(Action::OpenDmScreen(DmScreen::Requests));
     assert_eq!(
         app.state.nav_back,
-        [Place::Room("dm".into()), Place::Dm(DmScreen::Friends)]
+        [
+            HistoryPlace::Room("dm".into()),
+            HistoryPlace::Dm(DmScreen::Friends)
+        ]
     );
     assert!(app.state.can_go_back() && !app.state.can_go_forward());
 
@@ -11055,8 +11058,8 @@ fn back_and_forward_return_to_browse_channels() {
     assert_eq!(
         app.state.nav_back,
         [
-            Place::Room("discord:10:11".into()),
-            Place::Browse("discord:10".into())
+            HistoryPlace::Room("discord:10:11".into()),
+            HistoryPlace::Browse("discord:10".into())
         ]
     );
 

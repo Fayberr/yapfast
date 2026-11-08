@@ -472,7 +472,8 @@ impl Application {
                 .is_some_and(|navigation| *navigation != self.state.navigation);
         if crossing {
             let previous = self.state.place();
-            self.state.record_visit(previous, &Place::Room(id.clone()));
+            self.state
+                .record_visit(previous, &HistoryPlace::Room(id.clone()));
             self.state.nav_walking = true;
         }
         let mut effects = navigation
@@ -834,15 +835,15 @@ impl Application {
     }
 
     /// Shows a place, going to the server or the direct messages it belongs to.
-    fn show_place(&mut self, place: Place) -> Vec<Effect> {
+    fn show_place(&mut self, place: HistoryPlace) -> Vec<Effect> {
         match place {
-            Place::Room(id) => self.open(id, false),
-            Place::Dm(screen) => {
+            HistoryPlace::Room(id) => self.open(id, false),
+            HistoryPlace::Dm(screen) => {
                 let mut effects = self.navigate(Navigation::DirectMessages);
                 effects.extend(self.open_dm_screen(screen));
                 effects
             }
-            Place::Browse(server) => {
+            HistoryPlace::Browse(server) => {
                 let mut effects = self.navigate(Navigation::Server(server));
                 effects.extend(self.open_browse());
                 effects
@@ -893,7 +894,8 @@ impl Application {
         // Where the history goes back to, before the room replaces a screen.
         if !self.state.nav_walking {
             let previous = self.state.place();
-            self.state.record_visit(previous, &Place::Room(id.clone()));
+            self.state
+                .record_visit(previous, &HistoryPlace::Room(id.clone()));
         }
         self.remember_view();
         self.last_selected

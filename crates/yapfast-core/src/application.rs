@@ -395,7 +395,7 @@ pub enum DmScreen {
 /// arrows return to. Settings are not one: they open over the window, as in
 /// Discord's client.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Place {
+pub enum HistoryPlace {
     /// A conversation, by its room id.
     Room(String),
     /// A screen of the DM list.
@@ -551,8 +551,8 @@ pub struct AppState {
     pub pending_camera: Option<String>,
     /// The places visited before this one, newest last, and those stepped
     /// back from, for the title bar's back and forward arrows.
-    pub nav_back: Vec<Place>,
-    pub nav_forward: Vec<Place>,
+    pub nav_back: Vec<HistoryPlace>,
+    pub nav_forward: Vec<HistoryPlace>,
     /// A step through that history is under way: it records no visit.
     pub nav_walking: bool,
     pub account: Option<String>,
@@ -896,29 +896,29 @@ impl AppState {
 
     /// What the main area shows: a screen of the DM list or Browse Channels
     /// in place of a conversation, or the conversation selected.
-    pub fn place(&self) -> Option<Place> {
+    pub fn place(&self) -> Option<HistoryPlace> {
         if let Some(screen) = self.dm_screen {
-            Some(Place::Dm(screen))
+            Some(HistoryPlace::Dm(screen))
         } else if let Some(browse) = &self.browse {
-            Some(Place::Browse(browse.server.clone()))
+            Some(HistoryPlace::Browse(browse.server.clone()))
         } else {
-            self.selected.clone().map(Place::Room)
+            self.selected.clone().map(HistoryPlace::Room)
         }
     }
 
     /// Whether a place can be shown again: its conversation is still there,
     /// and its server still offers Browse Channels.
-    pub fn place_exists(&self, place: &Place) -> bool {
+    pub fn place_exists(&self, place: &HistoryPlace) -> bool {
         match place {
-            Place::Room(id) => self.rooms.iter().any(|room| &room.id == id),
-            Place::Dm(_) => true,
-            Place::Browse(server) => self.offers_browse(server),
+            HistoryPlace::Room(id) => self.rooms.iter().any(|room| &room.id == id),
+            HistoryPlace::Dm(_) => true,
+            HistoryPlace::Browse(server) => self.offers_browse(server),
         }
     }
 
     /// Notes that the place on screen, `previous`, gives way to `next`,
     /// which forgets what going back would have gone forward to.
-    pub(crate) fn record_visit(&mut self, previous: Option<Place>, next: &Place) {
+    pub(crate) fn record_visit(&mut self, previous: Option<HistoryPlace>, next: &HistoryPlace) {
         let Some(previous) = previous.filter(|previous| previous != next) else {
             return;
         };
@@ -941,7 +941,7 @@ impl AppState {
         self.can_go(&self.nav_forward)
     }
 
-    fn can_go(&self, places: &[Place]) -> bool {
+    fn can_go(&self, places: &[HistoryPlace]) -> bool {
         let current = self.place();
         places
             .iter()
