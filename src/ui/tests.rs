@@ -9095,3 +9095,24 @@ fn a_saved_font_file_that_is_missing_is_skipped_and_noted() {
     assert_eq!(window.global::<ClientStyle>().get_font_family(), "DM Sans");
     assert!(window.get_font_note().contains("Yapfast uses its own font"));
 }
+
+#[test]
+fn the_mouse_side_buttons_go_back_and_forward() {
+    use slint::winit_030::winit::event::MouseButton;
+    assert!(matches!(
+        side_button_action(MouseButton::Back),
+        Some(Action::NavigateBack)
+    ));
+    assert!(matches!(
+        side_button_action(MouseButton::Forward),
+        Some(Action::NavigateForward)
+    ));
+    for other in [
+        MouseButton::Left,
+        MouseButton::Right,
+        MouseButton::Middle,
+        MouseButton::Other(7),
+    ] {
+        assert!(side_button_action(other).is_none(), "{other:?}");
+    }
+}
