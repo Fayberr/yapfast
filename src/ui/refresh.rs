@@ -890,16 +890,28 @@ impl Adapter {
         window.set_online(state.online);
         // Only the sign-in screen offers it, and finding out reads the OS
         // credential store or the disk.
-        if !workspace
-            && !matches!(
-                state.discord_link,
-                Some(
-                    yapfast_core::application::DiscordLink::Importing
-                        | yapfast_core::application::DiscordLink::CancellingImport
-                )
+        let restore_blocked = matches!(
+            state.discord_link,
+            Some(
+                yapfast_core::application::DiscordLink::Importing
+                    | yapfast_core::application::DiscordLink::CancellingImport
             )
-        {
-            window.set_restore_available(yapfast_core::chat::can_restore(&self.root));
+        ) || {
+            #[cfg(feature = "discord")]
+            {
+                yapfast_core::discord_link::saves_pending()
+            }
+            #[cfg(not(feature = "discord"))]
+            {
+                false
+            }
+        };
+        if !workspace {
+            if restore_blocked {
+                window.set_restore_available(false);
+            } else {
+                window.set_restore_available(yapfast_core::chat::can_restore(&self.root));
+            }
         }
         window.set_dms_selected(state.navigation == Navigation::DirectMessages);
         window.set_dms_unread(
@@ -1598,6 +1610,12 @@ impl Adapter {
         window.set_discord_status(state.discord_presence.as_deref().unwrap_or("online").into());
         window.set_storage(state.storage.unwrap_or_default().into());
         window.set_notice(state.notice.as_deref().unwrap_or_default().into());
+        window.set_notice_is_error(
+            state
+                .notice
+                .as_ref()
+                .is_some_and(|notice| notice.is_error()),
+        );
     }
 
     /// The rows of the inbox popout's open tab, from what the client already

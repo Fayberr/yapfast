@@ -2,10 +2,61 @@
 
 use anyhow::{Result, bail};
 use futures_util::{StreamExt, stream};
-use std::{collections::HashSet, future::Future};
+use std::{
+    collections::HashSet,
+    future::Future,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 use yapfast_discord::import::{Discovery, Found, ProfileFailure, ReadFailure, Unsupported};
 
 const VALIDATIONS: usize = 4;
+const CANCEL_GRACE: std::time::Duration = std::time::Duration::from_secs(10);
+static PENDING_SAVES: AtomicUsize = AtomicUsize::new(0);
+
+/// Includes writes left running after a cancellation deadline, across all runs.
+pub fn saves_pending() -> bool {
+    PENDING_SAVES.load(Ordering::Acquire) > 0
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum SaveProgress {
+    Started,
+    Finished { linked: bool },
+}
+
+/// The observer survives a cancellation deadline so the UI can learn when the
+/// blocking write releases the credential store, including after a join error.
+pub(super) async fn save_in_background(
+    save: impl FnOnce() -> Result<bool> + Send + 'static,
+    progress: impl Fn(SaveProgress) + Send + 'static,
+) -> Result<bool> {
+    use anyhow::Context;
+    PENDING_SAVES.fetch_add(1, Ordering::AcqRel);
+    progress(SaveProgress::Started);
+    let task = tokio::task::spawn_blocking(save);
+    let (sender, result) = tokio::sync::oneshot::channel();
+    tokio::spawn(async move {
+        let result = task
+            .await
+            .context("Discord credential-store worker failed")
+            .and_then(|result| result);
+        PENDING_SAVES.fetch_sub(1, Ordering::AcqRel);
+        progress(SaveProgress::Finished {
+            linked: result.is_ok(),
+        });
+        // Normally the batch logs failures. After its grace period expires,
+        // this observer owns the error instead.
+        if let Err(Err(error)) = sender.send(result) {
+            tracing::warn!(
+                error = format!("{error:#}"),
+                "could not finish a cancelled Discord account save"
+            );
+        }
+    });
+    result
+        .await
+        .context("Discord credential-store observer stopped")?
+}
 
 /// Stops validation promptly while allowing an in-flight credential save to finish.
 #[derive(Clone, Debug)]
@@ -114,6 +165,7 @@ pub(super) struct Summary {
     pub failures: Vec<Failure>,
     pub unreadable_profiles: Vec<ProfileFailure>,
     pub cancelled: bool,
+    pub save_pending: bool,
 }
 
 impl Summary {
@@ -149,6 +201,9 @@ impl Summary {
             } else {
                 format!("Import cancelled. {message}")
             };
+            if self.save_pending {
+                message.push_str(" A save may still finish.");
+            }
         }
         let mut reported = Vec::new();
         for cause in &self.failures {
@@ -242,9 +297,18 @@ where
         if cancel.is_cancelled() {
             break;
         }
-        // Once a save starts, cancellation waits for its final result. The UI
-        // refreshes only after this task reports completion.
-        match save(account).await {
+        let saving = save(account);
+        tokio::pin!(saving);
+        let result = tokio::select! {
+            biased;
+            result = &mut saving => Some(result),
+            _ = cancel.cancelled() => tokio::time::timeout(CANCEL_GRACE, &mut saving).await.ok(),
+        };
+        let Some(result) = result else {
+            summary.save_pending = true;
+            break;
+        };
+        match result {
             Ok(added) => {
                 seen.insert(id);
                 summary.linked += 1;
@@ -327,6 +391,106 @@ mod tests {
                 expected
             );
         }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn cancellation_reports_a_stalled_save_after_ten_seconds() {
+        let cancel = Cancellation::default();
+        let start = tokio::time::Instant::now();
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(11),
+            super::run(
+                discovery(&["one"]),
+                |account| ready(Ok(validated(account))),
+                |_| {
+                    cancel.cancel();
+                    std::future::pending::<Result<bool>>()
+                },
+                cancel.clone(),
+            ),
+        )
+        .await
+        .expect("cancel must release the screen within the grace period")
+        .unwrap();
+        assert_eq!(start.elapsed(), std::time::Duration::from_secs(10));
+        assert!(result.cancelled);
+        assert!(result.message().contains("A save may still finish."));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn cancellation_grace_starts_when_requested_not_when_the_save_starts() {
+        let cancel = Cancellation::default();
+        let start = tokio::time::Instant::now();
+        let future = super::run(
+            discovery(&["one"]),
+            |account| ready(Ok(validated(account))),
+            |_| std::future::pending::<Result<bool>>(),
+            cancel.clone(),
+        );
+        let (_, summary) = tokio::join!(
+            async {
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                cancel.cancel();
+            },
+            future
+        );
+        assert!(summary.unwrap().save_pending);
+        assert_eq!(start.elapsed(), std::time::Duration::from_secs(70));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_save_finishing_after_the_grace_period_still_reports_completion() {
+        let (events, mut reports) = tokio::sync::mpsc::unbounded_channel();
+        let (release, blocker) = std::sync::mpsc::channel();
+        let mut blocker = Some(blocker);
+        let cancel = Cancellation::default();
+        let future = super::run(
+            discovery(&["first", "second"]),
+            |candidate| {
+                let mut account = validated(candidate);
+                account.id = account.token.clone();
+                ready(Ok(account))
+            },
+            |_| {
+                let blocker = blocker.take().expect("no later save may start");
+                let events = events.clone();
+                save_in_background(
+                    move || {
+                        blocker.recv().unwrap();
+                        Ok(true)
+                    },
+                    move |step| {
+                        let _ = events.send(step);
+                    },
+                )
+            },
+            cancel.clone(),
+        );
+        tokio::pin!(future);
+        tokio::select! {
+            result = &mut future => panic!("reported before save started: {result:?}"),
+            event = reports.recv() => assert_eq!(event, Some(SaveProgress::Started)),
+        }
+        cancel.cancel();
+        // Poll the worker to register its cancellation deadline.
+        tokio::select! {
+            biased;
+            result = &mut future => panic!("reported without a grace period: {result:?}"),
+            _ = tokio::task::yield_now() => {},
+        }
+        tokio::time::advance(CANCEL_GRACE).await;
+        let summary = (&mut future).await.unwrap();
+        assert!(summary.cancelled && summary.save_pending);
+        assert_eq!(summary.linked, 0);
+        assert_eq!(
+            summary.message(),
+            "Import cancelled. A save may still finish."
+        );
+        release.send(()).unwrap();
+        assert_eq!(
+            reports.recv().await,
+            Some(SaveProgress::Finished { linked: true })
+        );
     }
 
     #[tokio::test]

@@ -65,9 +65,17 @@ A connected client refreshes its account list without reconnecting or clearing t
 conversation.
 
 Cancellation stops validation and prevents further saves. A credential save
-already in progress finishes before cancellation is reported. Accounts saved
-before the request or by that in-flight save remain linked. A connected client
-refreshes its list after the save finishes. Cancelling a first import stays on
-the sign-in screen, reports the saved accounts and offers **Continue with saved
-account**. That account is also available to restore on the next launch. Closing
-the application can abort the reporting task while a blocking save still runs.
+already in progress gets a ten-second grace period after the cancellation
+request. If it still has not returned, the screen reports **Import cancelled.
+A save may still finish.** and allows linking again. The blocking save keeps
+running; it cannot be forcibly stopped. The UI avoids credential-store reads
+while any import save is pending, including after the deadline. When the save
+finishes, the connected account list refreshes, even if another linking flow
+has started.
+
+Accounts saved before the request or by an in-flight save remain linked.
+Cancelling a first import stays on the sign-in screen, reports confirmed saved
+accounts and offers **Continue with saved account** once the store is available.
+That account is also available to restore on the next launch. Cancellation and
+success notices use neutral text; error notices use the error colour. Closing
+the application can abort reporting while a blocking save still runs.

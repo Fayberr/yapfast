@@ -40,7 +40,7 @@ def main():
             "serde_json": f'"={version("serde_json")}"',
             "tempfile": f'"={version("tempfile")}"',
             "rusty-leveldb": '{ version = "=4.0.1", default-features = false }',
-            "tokio": '{ version = "1", features = ["rt", "macros", "time", "sync"] }',
+            "tokio": '{ version = "1", features = ["rt", "macros", "time", "sync", "test-util"] }',
             "serde": '{ version = "1", features = ["derive"] }',
             "sha2": '"0.10"',
             "keyring": '"=4.2.0"',

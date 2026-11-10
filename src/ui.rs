@@ -2175,6 +2175,8 @@ struct Adapter {
     linking: Option<yapfast_core::runtime::BackgroundTask<()>>,
     #[cfg(feature = "discord")]
     import_cancel: Option<yapfast_core::discord_link::Cancellation>,
+    #[cfg(feature = "discord")]
+    import_refresh: Option<bool>,
     /// Counts linking runs, so a replaced run's last words are ignored.
     #[cfg(feature = "discord")]
     link_run: u64,
@@ -2462,6 +2464,8 @@ impl Adapter {
                 #[cfg(feature = "discord")]
                 import_cancel: None,
                 #[cfg(feature = "discord")]
+                import_refresh: None,
+                #[cfg(feature = "discord")]
                 link_run: 0,
                 #[cfg(feature = "discord")]
                 link_code: None,
@@ -2681,7 +2685,9 @@ impl Adapter {
             Ok(handle) => self.dialog = Some(handle),
             Err(error) => {
                 tracing::error!(%error, "could not open the file dialog");
-                self.app.state.notice = Some("Yapfast could not open a file dialog.".into());
+                self.app.state.notice = Some(yapfast_core::application::Notice::Error(
+                    "Yapfast could not open a file dialog.".into(),
+                ));
             }
         }
     }
@@ -2800,15 +2806,20 @@ impl Adapter {
                 }
                 Effect::OpenPage(page) => browser::open(&page),
                 Effect::CopyPicture(picture) => crate::copy::picture(picture),
-                Effect::StopDiscordLink => {
+                Effect::CancelDiscordImport => {
                     #[cfg(feature = "discord")]
                     {
                         if let Some(cancel) = &self.import_cancel {
                             cancel.cancel();
-                        } else {
-                            self.linking = None;
-                            self.link_run += 1;
                         }
+                    }
+                }
+                Effect::StopDiscordLink => {
+                    #[cfg(feature = "discord")]
+                    {
+                        self.linking = None;
+                        self.import_cancel = None;
+                        self.link_run += 1;
                     }
                 }
                 Effect::Notify(alert) => {
@@ -2841,6 +2852,12 @@ impl Adapter {
                 Effect::Sound(sound) => self.sound(sound),
                 Effect::Backend(Command::Typing { .. })
                     if !self.layout.share_typing.unwrap_or(true) => {}
+                #[cfg(feature = "discord")]
+                Effect::Backend(yapfast_core::chat::Command::Discord(
+                    yapfast_core::chat::DiscordCommand::ListAccounts,
+                )) if yapfast_core::discord_link::saves_pending() => {
+                    self.import_refresh = Some(self.import_refresh.unwrap_or(false));
+                }
                 Effect::Backend(command) => {
                     let result = match &self.backend {
                         Some(backend) => backend.send(command),
@@ -2905,14 +2922,33 @@ impl Adapter {
                 };
                 let window = adapter.borrow().window.upgrade();
                 let mut adapter = adapter.borrow_mut();
-                if adapter.link_run != run {
-                    return;
+                use yapfast_core::discord_link::Progress;
+                match step {
+                    Progress::ImportSaveStarted => {}
+                    Progress::ImportSaveFinished { linked } => {
+                        adapter.import_refresh =
+                            Some(adapter.import_refresh.unwrap_or(false) || linked);
+                    }
+                    _ if adapter.link_run != run => continue,
+                    step => {
+                        adapter.import_cancel = None;
+                        adapter.linking = None;
+                        let effects = adapter.app.linking(step);
+                        let listed = effects.iter().any(|effect| {
+                            matches!(
+                                effect,
+                                Effect::Backend(yapfast_core::chat::Command::Discord(
+                                    yapfast_core::chat::DiscordCommand::ListAccounts
+                                ))
+                            )
+                        });
+                        adapter.execute(effects);
+                        if listed && !yapfast_core::discord_link::saves_pending() {
+                            adapter.import_refresh = None;
+                        }
+                    }
                 }
-                // Import reports only after all credential writes have finished.
-                adapter.import_cancel = None;
-                adapter.linking = None;
-                let effects = adapter.app.linking(step);
-                adapter.execute(effects);
+                adapter.refresh_import_saves();
                 if let Some(window) = window {
                     adapter.refresh(&window);
                 }
@@ -2940,6 +2976,7 @@ impl Adapter {
                                 "Account import stopped. Please retry.".into(),
                             ));
                     adapter.execute(effects);
+                    adapter.refresh_import_saves();
                     if let Some(window) = window {
                         adapter.refresh(&window);
                     }
@@ -2959,6 +2996,25 @@ impl Adapter {
             if let Some(window) = self.window.upgrade() {
                 self.refresh(&window);
             }
+        }
+    }
+
+    /// Completion notifications outlive the cancelled worker and any replacement
+    /// QR/import run. Never read the store while another import save holds it.
+    #[cfg(feature = "discord")]
+    fn refresh_import_saves(&mut self) {
+        use yapfast_core::{application::DiscordLink, discord_link::Progress};
+        if yapfast_core::discord_link::saves_pending()
+            || matches!(
+                self.app.state.discord_link,
+                Some(DiscordLink::Importing | DiscordLink::CancellingImport)
+            )
+        {
+            return;
+        }
+        if let Some(linked) = self.import_refresh.take() {
+            let effects = self.app.linking(Progress::ImportSaveFinished { linked });
+            self.execute(effects);
         }
     }
 

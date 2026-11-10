@@ -548,7 +548,9 @@ impl Application {
             .map(|choice| choice.value.clone())
             .collect();
         if values.len() < menu.min || values.len() > menu.max {
-            self.state.notice = Some("Choose the required number of options.".into());
+            self.state.notice = Some(super::Notice::Error(
+                "Choose the required number of options.".into(),
+            ));
             return vec![];
         }
         let menu = self.state.select_menu.take().unwrap();

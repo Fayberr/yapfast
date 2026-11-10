@@ -16,7 +16,7 @@ use yapfast_discord::{
 use crate::runtime::{BackgroundRuntime, BackgroundTask};
 
 mod importing;
-pub use importing::Cancellation;
+pub use importing::{Cancellation, saves_pending};
 
 /// How linking goes, for [`crate::application::Application::linking`].
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -31,10 +31,15 @@ pub enum Progress {
     Linked,
     /// A validated import finished, with counts and any partial failures.
     Imported(String),
-    /// Cancellation has finished, including any credential save already started.
+    ImportSaveStarted,
+    ImportSaveFinished {
+        linked: bool,
+    },
+    /// Cancellation has finished or the save grace period has expired.
     ImportCancelled {
         message: String,
         linked: bool,
+        save_pending: bool,
     },
     /// The code expired before anyone confirmed it.
     Expired,
@@ -62,9 +67,9 @@ pub fn start(
 /// Starts importing the accounts the vanilla Discord client keeps on this
 /// device, on `runtime`. Each login found is checked against Discord and
 /// linked beside any account already there; the result arrives on the
-/// receiver as one [`Progress`], as linking does, so the sign-in screen
-/// follows it the same way. Request cancellation through the returned handle
-/// and keep the task until it reports, so an in-flight credential save finishes.
+/// receiver as save progress and a terminal outcome. Request cancellation through
+/// the returned handle and keep the task until it reports. After the grace period,
+/// a pending save's completion can still arrive, including after a replacement run.
 pub fn import(
     runtime: &BackgroundRuntime,
 ) -> (
@@ -87,11 +92,12 @@ pub fn import(
 /// Finds the vanilla client's logins, links the ones Discord still accepts,
 /// and tells `progress` how it went. A login the client holds but Discord has
 /// logged out is skipped, not an error.
-async fn run_import(cancel: Cancellation, progress: impl Fn(Progress)) {
+async fn run_import(cancel: Cancellation, progress: impl Fn(Progress) + Clone + Send + 'static) {
     let cancelled = || {
         progress(Progress::ImportCancelled {
             message: "Import cancelled.".into(),
             linked: false,
+            save_pending: false,
         })
     };
     // Filesystem reads and DPAPI must not occupy the network worker threads.
@@ -116,6 +122,7 @@ async fn run_import(cancel: Cancellation, progress: impl Fn(Progress)) {
             ),
         }
     }
+    let save_progress = progress.clone();
     let linked = importing::run(
         discovery,
         |candidate| async move {
@@ -140,12 +147,19 @@ async fn run_import(cancel: Cancellation, progress: impl Fn(Progress)) {
             .await
             .map_err(|error| anyhow::Error::new(error).context(importing::Failure::Timeout))?
         },
-        |account| async move {
-            tokio::task::spawn_blocking(move || {
-                token::adopt(&account.token, &account.username, &account.name)
-            })
-            .await
-            .context("Discord credential-store worker failed")?
+        move |account| {
+            let progress = save_progress.clone();
+            importing::save_in_background(
+                move || token::adopt(&account.token, &account.username, &account.name),
+                move |step| {
+                    progress(match step {
+                        importing::SaveProgress::Started => Progress::ImportSaveStarted,
+                        importing::SaveProgress::Finished { linked } => {
+                            Progress::ImportSaveFinished { linked }
+                        }
+                    })
+                },
+            )
         },
         cancel,
     )
@@ -154,6 +168,7 @@ async fn run_import(cancel: Cancellation, progress: impl Fn(Progress)) {
         Ok(summary) if summary.cancelled => Progress::ImportCancelled {
             message: summary.message(),
             linked: summary.linked > 0,
+            save_pending: summary.save_pending,
         },
         Ok(summary) => Progress::Imported(summary.message()),
         Err(error) => Progress::Failed(error.to_string()),

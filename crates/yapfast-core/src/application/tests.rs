@@ -5403,7 +5403,8 @@ fn cancelling_a_first_import_reports_saved_accounts_without_connecting() {
     assert!(
         app.linking(Progress::ImportCancelled {
             message: message.into(),
-            linked: true
+            linked: true,
+            save_pending: false
         })
         .is_empty()
     );
@@ -5412,6 +5413,9 @@ fn cancelling_a_first_import_reports_saved_accounts_without_connecting() {
     assert!(app.state.account.is_none());
     assert!(!app.state.busy);
     assert_eq!(app.state.notice.as_deref(), Some(message));
+    assert!(!app.state.notice.as_ref().unwrap().is_error());
+    app.apply(Event::Error("offline".into()));
+    assert!(app.state.notice.as_ref().unwrap().is_error());
     assert!(matches!(
         app.dispatch(Action::Restore).as_slice(),
         [Effect::Start(chat::Start::Restore)]
@@ -5438,6 +5442,44 @@ fn cancelling_before_queued_import_success_does_not_start_a_connection() {
 
 #[test]
 #[cfg(feature = "discord")]
+fn a_cancel_deadline_releases_linking_and_a_late_save_refreshes_accounts() {
+    use crate::discord_link::Progress;
+    let mut app = connected();
+    app.state.discord_linked = true;
+    linked_accounts(&mut app, &["1"], "1");
+    app.dispatch(Action::OpenManageAccounts);
+    app.dispatch(Action::ImportDiscord);
+    assert!(matches!(
+        app.dispatch(Action::CancelDiscordLink).as_slice(),
+        [Effect::CancelDiscordImport]
+    ));
+    assert!(
+        app.linking(Progress::ImportCancelled {
+            message: "Import cancelled. A save may still finish.".into(),
+            linked: false,
+            save_pending: true,
+        })
+        .is_empty(),
+        "do not read a store still held by the pending save"
+    );
+    assert_eq!(app.state.discord_link, None);
+    assert!(!app.state.notice.as_ref().unwrap().is_error());
+    assert!(matches!(
+        app.dispatch(Action::LinkDiscord).as_slice(),
+        [Effect::LinkDiscord]
+    ));
+    assert!(matches!(
+        app.linking(Progress::ImportSaveFinished { linked: true })
+            .as_slice(),
+        [Effect::Backend(Command::Discord(
+            DiscordCommand::ListAccounts
+        ))]
+    ));
+    assert_eq!(app.state.discord_link, Some(DiscordLink::Starting));
+}
+
+#[test]
+#[cfg(feature = "discord")]
 fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() {
     use crate::discord_link::Progress;
     let mut app = Application::default();
@@ -5457,7 +5499,7 @@ fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() 
     ));
     assert!(matches!(
         app.dispatch(Action::CancelDiscordLink).as_slice(),
-        [Effect::StopDiscordLink]
+        [Effect::CancelDiscordImport]
     ));
     assert_eq!(app.state.discord_link, Some(DiscordLink::CancellingImport));
     assert!(app.dispatch(Action::ImportDiscord).is_empty());
@@ -5465,7 +5507,8 @@ fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() 
     assert!(
         app.linking(Progress::ImportCancelled {
             message: "Import cancelled.".into(),
-            linked: false
+            linked: false,
+            save_pending: false
         })
         .is_empty()
     );
@@ -5481,14 +5524,15 @@ fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() 
     ));
     assert!(matches!(
         app.dispatch(Action::CancelDiscordLink).as_slice(),
-        [Effect::StopDiscordLink]
+        [Effect::CancelDiscordImport]
     ));
     assert_eq!(app.state.discord_active, "1");
     assert_eq!(app.state.discord_link, Some(DiscordLink::CancellingImport));
     assert!(matches!(
         app.linking(Progress::ImportCancelled {
             message: "Import cancelled. Imported 1 account.".into(),
-            linked: true
+            linked: true,
+            save_pending: false
         })
         .as_slice(),
         [Effect::Backend(Command::Discord(

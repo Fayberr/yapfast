@@ -234,7 +234,7 @@ impl Application {
             }
         };
         if body.len() > chat::MAX_MESSAGE_BYTES {
-            self.state.notice = Some("Keep messages under 16 KB.".into());
+            self.state.notice = Some(super::Notice::Error("Keep messages under 16 KB.".into()));
             return vec![];
         }
         if self.state.preview {
@@ -341,7 +341,9 @@ impl Application {
             return;
         }
         if self.state.editing() {
-            self.state.notice = Some("Files can't be added to a message being edited.".into());
+            self.state.notice = Some(super::Notice::Error(
+                "Files can't be added to a message being edited.".into(),
+            ));
             return;
         }
         // A forum's files go with a post, whose form they open, as Discord's
@@ -369,7 +371,9 @@ impl Application {
             return;
         }
         if matches!(self.state.aside_compose(), Some(Compose::Edit { .. })) {
-            self.state.notice = Some("Files can't be added to a message being edited.".into());
+            self.state.notice = Some(super::Notice::Error(
+                "Files can't be added to a message being edited.".into(),
+            ));
             return;
         }
         self.stage_in(id, paths);
@@ -402,7 +406,7 @@ impl Application {
                 Err(error) => problem = problem.or(Some(error)),
             }
         }
-        self.state.notice = problem;
+        self.state.notice = problem.map(super::Notice::Error);
     }
 
     /// Leave reply or edit mode, restoring the draft an edit replaced.

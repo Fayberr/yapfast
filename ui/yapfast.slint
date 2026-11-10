@@ -359,6 +359,7 @@ export component YapfastWindow inherits Window {
     in property <string> account-status-emoji;
     in property <string> storage;
     in property <string> notice;
+    in property <bool> notice-is-error;
     in-out property <string> graphics-notice;
     in property <string> room-name;
     /// A Discord thread's channel: its name, and its room id to go back to.
@@ -2460,7 +2461,7 @@ export component YapfastWindow inherits Window {
     SignInScreen {
         y: root.title-height; height: root.height - root.title-height;
         visible: !root.workspace;
-        busy: root.busy; notice: root.notice; restore-available: root.restore-available; matrix-build: root.matrix-build;
+        busy: root.busy; notice: root.notice; notice-is-error: root.notice-is-error; restore-available: root.restore-available; matrix-build: root.matrix-build;
         link-phase: root.link-phase; link-code: root.link-code; link-name: root.link-name; link-note: root.link-note;
         import-available: root.discord-import-available;
         sign-in-focus: root.sign-in-focus;

@@ -7,6 +7,7 @@ import { DiscordLinkPanel } from "discord.slint";
 export component SignInScreen inherits Rectangle {
     in property <bool> busy;
     in property <string> notice;
+    in property <bool> notice-is-error;
     in property <bool> restore-available;
     // A build without Matrix signs in by linking Discord.
     in property <bool> matrix-build;
@@ -74,7 +75,7 @@ export component SignInScreen inherits Rectangle {
                                 clicked => { root.cancel-discord-link(); }
                             }
                             if root.notice != "" && (root.busy || root.link-phase == 0): Text {
-                                text: root.notice; color: root.busy ? Theme.secondary : Theme.danger; font-size: 15px; wrap: word-wrap;
+                                text: root.notice; color: root.notice-is-error ? Theme.danger : Theme.secondary; font-size: 15px; wrap: word-wrap;
                             }
                             if root.restore-available && !root.busy && root.link-phase == 0: ActionButton {
                                 text: "Continue with saved account";
@@ -98,7 +99,7 @@ export component SignInScreen inherits Rectangle {
                             TextField { text <=> root.password; password: true; enabled: !root.busy; label: "Password"; accepted => { root.login(); } }
                             Rectangle { height: 12px; }
                             ActionButton { min-height: 44px; text: root.busy ? "Connecting..." : "Sign in"; primary: true; enabled: !root.busy; clicked => { root.login(); } }
-                            if root.notice != "": Text { text: root.notice; color: Theme.danger; font-size: 15px; wrap: word-wrap; }
+                            if root.notice != "": Text { text: root.notice; color: root.notice-is-error ? Theme.danger : Theme.secondary; font-size: 15px; wrap: word-wrap; }
                             if root.restore-available && !root.busy: ActionButton { text: "Retry saved session"; clicked => { root.restore(); } }
                             Label { text: "Sign in with your Matrix password. Single sign-on isn't available yet."; }
                         }
