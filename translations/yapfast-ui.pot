@@ -5466,11 +5466,12 @@ msgstr ""
 msgid "The check stopped partway."
 msgstr ""
 
-#: src/update/install.rs
-msgid "The download of {} couldn't be verified, so it wasn't installed."
-
 #: src/ui/refresh.rs
 msgid "The Discord token is stored in the OS credential store."
+msgstr ""
+
+#: src/update/install.rs
+msgid "The download of {} couldn't be verified, so it wasn't installed."
 msgstr ""
 
 #: ui/settings.slint

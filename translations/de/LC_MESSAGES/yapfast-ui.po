@@ -5465,13 +5465,13 @@ msgstr "Der Anruf bleibt verbunden, während du andere Unterhaltungen durchsuchs
 msgid "The check stopped partway."
 msgstr "Die Suche wurde unterbrochen."
 
-#: src/update/install.rs
-msgid "The download of {} couldn't be verified, so it wasn't installed."
-msgstr "Der Download von {} konnte nicht überprüft werden und wurde deshalb nicht installiert."
-
 #: src/ui/refresh.rs
 msgid "The Discord token is stored in the OS credential store."
 msgstr "Der Discord-Token wird im Anmeldedatenspeicher des Betriebssystems abgelegt."
+
+#: src/update/install.rs
+msgid "The download of {} couldn't be verified, so it wasn't installed."
+msgstr "Der Download von {} konnte nicht überprüft werden und wurde deshalb nicht installiert."
 
 #: ui/settings.slint
 msgid "The fonts and colours people give their display names."
