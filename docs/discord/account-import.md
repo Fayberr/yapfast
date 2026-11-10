@@ -2,7 +2,8 @@
 
 Windows builds offer **Import accounts from the Discord app** on the sign-in
 screen and under **Manage Accounts > Add Account**. Import can be retried after
-an error. QR login and pasted tokens remain available.
+an error. QR login and pasted tokens remain available. After an import failure,
+the QR action says **Show the code**; after a QR failure, it says **Try again**.
 
 For a newly linked account, import reuses a saved Discord session. It does not
 create an independent login: logging that session out in Discord can invalidate
@@ -45,20 +46,28 @@ the network workers.
 Candidate debug formatting redacts the token.
 
 `yapfast-core/src/discord_link/importing.rs` validates candidates before storing
-them, with up to four validations in flight. The web client's build number is
+them, with up to four validations in flight. Results are saved in discovery
+order, regardless of response timing; duplicate user IDs keep the first usable
+session in that order. The web client's build number is
 learned once before the batch. Each request to `/users/@me` has a 30-second
 deadline. Deduplication uses the authenticated user ID.
 Existing unrelated saved accounts cannot turn a failed import into a success.
 The result reports added accounts, already linked accounts and partial failures.
 Only HTTP 401 counts as a signed-out session. Network failures, timeouts, other
-HTTP statuses and credential-store failures retain their own causes and retry
-guidance. Discovery, validation and save failures log their error chains without
+HTTP statuses, local client construction and credential-store failures retain
+their own causes and retry guidance. Discovery, validation and save failures log their error chains without
 logging candidate tokens. On first sign-in, the summary remains visible while
 the imported account connects.
 
 Import preserves an existing active account and its cached profile picture.
-The first usable account becomes active when none was linked. A connected
-client refreshes its account list without reconnecting or clearing the current
-conversation. Cancellation stops further validation; accounts saved before
-cancellation remain linked. A connected client refreshes the list after
-cancellation so those accounts are visible immediately.
+The first usable account in discovery order becomes active when none was linked.
+A connected client refreshes its account list without reconnecting or clearing the current
+conversation.
+
+Cancellation stops validation and prevents further saves. A credential save
+already in progress finishes before cancellation is reported. Accounts saved
+before the request or by that in-flight save remain linked. A connected client
+refreshes its list after the save finishes. Cancelling a first import stays on
+the sign-in screen, reports the saved accounts and offers **Continue with saved
+account**. That account is also available to restore on the next launch. Closing
+the application can abort the reporting task while a blocking save still runs.

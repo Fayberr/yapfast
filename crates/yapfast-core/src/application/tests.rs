@@ -5375,6 +5375,69 @@ fn first_import_keeps_its_partial_failure_notice_while_connecting() {
 
 #[test]
 #[cfg(feature = "discord")]
+fn distinguishes_failed_import_from_failed_qr_linking() {
+    use crate::discord_link::Progress;
+    let mut app = Application::default();
+    app.dispatch(Action::LinkDiscord);
+    app.linking(Progress::Failed("QR failure".into()));
+    assert_eq!(
+        app.state.discord_link,
+        Some(DiscordLink::Failed("QR failure".into()))
+    );
+    app.dispatch(Action::ImportDiscord);
+    app.linking(Progress::Failed("Import failure".into()));
+    assert_eq!(
+        app.state.discord_link,
+        Some(DiscordLink::ImportFailed("Import failure".into()))
+    );
+}
+
+#[test]
+#[cfg(feature = "discord")]
+fn cancelling_a_first_import_reports_saved_accounts_without_connecting() {
+    use crate::discord_link::Progress;
+    let mut app = Application::default();
+    app.dispatch(Action::ImportDiscord);
+    app.dispatch(Action::CancelDiscordLink);
+    let message = "Import cancelled. Imported 1 account.";
+    assert!(
+        app.linking(Progress::ImportCancelled {
+            message: message.into(),
+            linked: true
+        })
+        .is_empty()
+    );
+    assert_eq!(app.state.discord_link, None);
+    assert!(app.state.discord_linked);
+    assert!(app.state.account.is_none());
+    assert!(!app.state.busy);
+    assert_eq!(app.state.notice.as_deref(), Some(message));
+    assert!(matches!(
+        app.dispatch(Action::Restore).as_slice(),
+        [Effect::Start(chat::Start::Restore)]
+    ));
+}
+
+#[test]
+#[cfg(feature = "discord")]
+fn cancelling_before_queued_import_success_does_not_start_a_connection() {
+    use crate::discord_link::Progress;
+    let mut app = Application::default();
+    app.dispatch(Action::ImportDiscord);
+    app.dispatch(Action::CancelDiscordLink);
+    assert!(
+        app.linking(Progress::Imported("Imported 1 account.".into()))
+            .is_empty()
+    );
+    assert_eq!(
+        app.state.notice.as_deref(),
+        Some("Import cancelled. Imported 1 account.")
+    );
+    assert!(!app.state.busy);
+}
+
+#[test]
+#[cfg(feature = "discord")]
 fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() {
     use crate::discord_link::Progress;
     let mut app = Application::default();
@@ -5396,10 +5459,17 @@ fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() 
         app.dispatch(Action::CancelDiscordLink).as_slice(),
         [Effect::StopDiscordLink]
     ));
+    assert_eq!(app.state.discord_link, Some(DiscordLink::CancellingImport));
+    assert!(app.dispatch(Action::ImportDiscord).is_empty());
+    assert!(app.dispatch(Action::LinkDiscord).is_empty());
     assert!(
-        app.linking(Progress::Imported("Imported 1 account.".into()))
-            .is_empty()
+        app.linking(Progress::ImportCancelled {
+            message: "Import cancelled.".into(),
+            linked: false
+        })
+        .is_empty()
     );
+    assert_eq!(app.state.discord_link, None);
 
     let mut app = connected();
     app.state.discord_linked = true;
@@ -5411,12 +5481,20 @@ fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() 
     ));
     assert!(matches!(
         app.dispatch(Action::CancelDiscordLink).as_slice(),
-        [
-            Effect::StopDiscordLink,
-            Effect::Backend(Command::Discord(DiscordCommand::ListAccounts))
-        ]
+        [Effect::StopDiscordLink]
     ));
     assert_eq!(app.state.discord_active, "1");
+    assert_eq!(app.state.discord_link, Some(DiscordLink::CancellingImport));
+    assert!(matches!(
+        app.linking(Progress::ImportCancelled {
+            message: "Import cancelled. Imported 1 account.".into(),
+            linked: true
+        })
+        .as_slice(),
+        [Effect::Backend(Command::Discord(
+            DiscordCommand::ListAccounts
+        ))]
+    ));
     app.dispatch(Action::ImportDiscord);
     let effects = app.linking(Progress::Imported("Imported 1 account.".into()));
     assert!(matches!(

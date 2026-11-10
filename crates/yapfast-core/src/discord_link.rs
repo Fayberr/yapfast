@@ -16,6 +16,7 @@ use yapfast_discord::{
 use crate::runtime::{BackgroundRuntime, BackgroundTask};
 
 mod importing;
+pub use importing::Cancellation;
 
 /// How linking goes, for [`crate::application::Application::linking`].
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -30,6 +31,11 @@ pub enum Progress {
     Linked,
     /// A validated import finished, with counts and any partial failures.
     Imported(String),
+    /// Cancellation has finished, including any credential save already started.
+    ImportCancelled {
+        message: String,
+        linked: bool,
+    },
     /// The code expired before anyone confirmed it.
     Expired,
     Failed(String),
@@ -57,28 +63,53 @@ pub fn start(
 /// device, on `runtime`. Each login found is checked against Discord and
 /// linked beside any account already there; the result arrives on the
 /// receiver as one [`Progress`], as linking does, so the sign-in screen
-/// follows it the same way. Dropping the task stops it.
-pub fn import(runtime: &BackgroundRuntime) -> (BackgroundTask<()>, UnboundedReceiver<Progress>) {
+/// follows it the same way. Request cancellation through the returned handle
+/// and keep the task until it reports, so an in-flight credential save finishes.
+pub fn import(
+    runtime: &BackgroundRuntime,
+) -> (
+    BackgroundTask<()>,
+    UnboundedReceiver<Progress>,
+    Cancellation,
+) {
     let (sender, progress) = mpsc::unbounded_channel();
     let report = move |step| {
         let _ = sender.send(step);
     };
-    (runtime.spawn(run_import(report)), progress)
+    let cancel = Cancellation::default();
+    (
+        runtime.spawn(run_import(cancel.clone(), report)),
+        progress,
+        cancel,
+    )
 }
 
 /// Finds the vanilla client's logins, links the ones Discord still accepts,
 /// and tells `progress` how it went. A login the client holds but Discord has
 /// logged out is skipped, not an error.
-async fn run_import(progress: impl Fn(Progress)) {
+async fn run_import(cancel: Cancellation, progress: impl Fn(Progress)) {
+    let cancelled = || {
+        progress(Progress::ImportCancelled {
+            message: "Import cancelled.".into(),
+            linked: false,
+        })
+    };
     // Filesystem reads and DPAPI must not occupy the network worker threads.
-    let discovery =
-        match importing::discovery_result(tokio::task::spawn_blocking(import::discover).await) {
+    let discovery = tokio::select! {
+        biased;
+        _ = cancel.cancelled() => return cancelled(),
+        result = tokio::task::spawn_blocking(import::discover) => match importing::discovery_result(result) {
             Ok(discovery) => discovery,
             Err(error) => return progress(Progress::Failed(error.to_string())),
-        };
+        },
+    };
     if !discovery.accounts.is_empty() {
         match Api::anonymous() {
-            Ok(api) => api.learn_build_number().await,
+            Ok(api) => tokio::select! {
+                biased;
+                _ = cancel.cancelled() => return cancelled(),
+                _ = api.learn_build_number() => {},
+            },
             Err(error) => tracing::warn!(
                 error = format!("{error:#}"),
                 "could not prepare Discord build-number lookup"
@@ -91,7 +122,7 @@ async fn run_import(progress: impl Fn(Progress)) {
             // A stalled request must not leave the sign-in screen waiting forever.
             tokio::time::timeout(std::time::Duration::from_secs(30), async move {
                 let token = token::clean(&candidate.token).context(importing::Failure::Invalid)?;
-                let api = Api::new(token.clone()).context(importing::Failure::Network)?;
+                let api = Api::new(token.clone()).context(importing::Failure::Client)?;
                 let me = api.me().await.map_err(|error| {
                     let cause = match error.downcast_ref::<Refused>() {
                         Some(Refused(status)) => importing::Failure::refused(status.as_u16()),
@@ -116,9 +147,14 @@ async fn run_import(progress: impl Fn(Progress)) {
             .await
             .context("Discord credential-store worker failed")?
         },
+        cancel,
     )
     .await;
     progress(match linked {
+        Ok(summary) if summary.cancelled => Progress::ImportCancelled {
+            message: summary.message(),
+            linked: summary.linked > 0,
+        },
         Ok(summary) => Progress::Imported(summary.message()),
         Err(error) => Progress::Failed(error.to_string()),
     });

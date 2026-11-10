@@ -7,6 +7,31 @@ use yapfast_discord::import::{Discovery, Found, ProfileFailure, ReadFailure, Uns
 
 const VALIDATIONS: usize = 4;
 
+/// Stops validation promptly while allowing an in-flight credential save to finish.
+#[derive(Clone, Debug)]
+pub struct Cancellation(tokio::sync::watch::Sender<bool>);
+
+impl Default for Cancellation {
+    fn default() -> Self {
+        Self(tokio::sync::watch::channel(false).0)
+    }
+}
+
+impl Cancellation {
+    pub fn cancel(&self) {
+        self.0.send_replace(true);
+    }
+
+    pub(super) fn is_cancelled(&self) -> bool {
+        *self.0.borrow()
+    }
+
+    pub(super) async fn cancelled(&self) {
+        let mut receiver = self.0.subscribe();
+        let _ = receiver.wait_for(|cancelled| *cancelled).await;
+    }
+}
+
 pub(super) fn discovery_result(
     result: std::result::Result<Result<Discovery>, tokio::task::JoinError>,
 ) -> Result<Discovery> {
@@ -51,6 +76,7 @@ pub(super) enum Failure {
     Timeout,
     Service(u16),
     Network,
+    Client,
     Invalid,
     Storage,
 }
@@ -72,6 +98,7 @@ impl std::fmt::Display for Failure {
             Self::Timeout => f.write_str("Discord validation timed out. Check your connection and retry."),
             Self::Service(status) => write!(f, "Discord returned HTTP {status}. Retry later."),
             Self::Network => f.write_str("Yapfast could not reach Discord. Check your connection and retry."),
+            Self::Client => f.write_str("Yapfast could not prepare the Discord client. Retry the import."),
             Self::Invalid => f.write_str("Discord session data could not be validated. Use QR login to link the account."),
             Self::Storage => f.write_str("Yapfast could not save the account in the OS credential store. Check access to the credential store and retry."),
         }
@@ -86,6 +113,7 @@ pub(super) struct Summary {
     pub added: usize,
     pub failures: Vec<Failure>,
     pub unreadable_profiles: Vec<ProfileFailure>,
+    pub cancelled: bool,
 }
 
 impl Summary {
@@ -105,12 +133,23 @@ impl Summary {
             } else {
                 "accounts"
             };
-            format!(
-                "Imported {} {noun}; {} already linked.",
-                self.added,
-                self.linked - self.added
-            )
+            if self.linked > self.added {
+                format!(
+                    "Imported {} {noun}; {} already linked.",
+                    self.added,
+                    self.linked - self.added
+                )
+            } else {
+                format!("Imported {} {noun}.", self.added)
+            }
         };
+        if self.cancelled {
+            message = if self.linked == 0 {
+                "Import cancelled.".into()
+            } else {
+                format!("Import cancelled. {message}")
+            };
+        }
         let mut reported = Vec::new();
         for cause in &self.failures {
             if reported.contains(cause) {
@@ -133,7 +172,11 @@ impl Summary {
                 message.push_str(&format!(" {}", failure.message()));
             }
         }
-        if self.linked == 0 && self.failures.is_empty() && self.unreadable_profiles.is_empty() {
+        if !self.cancelled
+            && self.linked == 0
+            && self.failures.is_empty()
+            && self.unreadable_profiles.is_empty()
+        {
             message
                 .push_str(" No saved Discord sessions were found. Sign in to Discord and retry.");
         }
@@ -145,6 +188,7 @@ pub(super) async fn run<F, Fut, S, Save>(
     discovery: Discovery,
     validate: F,
     mut save: S,
+    cancel: Cancellation,
 ) -> Result<Summary>
 where
     F: FnMut(Found) -> Fut,
@@ -160,8 +204,16 @@ where
     // Futures belong to this task: cancelling it also drops pending validation.
     let mut pending = stream::iter(discovery.accounts)
         .map(validate)
-        .buffer_unordered(VALIDATIONS);
-    while let Some(result) = pending.next().await {
+        .buffered(VALIDATIONS);
+    loop {
+        let result = tokio::select! {
+            biased;
+            _ = cancel.cancelled() => break,
+            result = pending.next() => match result {
+                Some(result) => result,
+                None => break,
+            },
+        };
         let account = match result {
             Ok(account) if !account.id.is_empty() => account,
             Ok(_) => {
@@ -187,6 +239,11 @@ where
             continue;
         }
         let id = account.id.clone();
+        if cancel.is_cancelled() {
+            break;
+        }
+        // Once a save starts, cancellation waits for its final result. The UI
+        // refreshes only after this task reports completion.
         match save(account).await {
             Ok(added) => {
                 seen.insert(id);
@@ -202,7 +259,8 @@ where
             }
         }
     }
-    if summary.linked == 0 {
+    summary.cancelled = cancel.is_cancelled();
+    if summary.linked == 0 && !summary.cancelled {
         bail!("{}", summary.message());
     }
     Ok(summary)
@@ -220,7 +278,13 @@ mod tests {
         Fut: Future<Output = Result<Validated>>,
         S: FnMut(Validated) -> Result<bool>,
     {
-        super::run(discovery, validate, move |account| ready(save(account))).await
+        super::run(
+            discovery,
+            validate,
+            move |account| ready(save(account)),
+            Cancellation::default(),
+        )
+        .await
     }
 
     fn discovery(tokens: &[&str]) -> Discovery {
@@ -243,6 +307,143 @@ mod tests {
             username: "fixture".into(),
             name: "Fixture".into(),
         }
+    }
+
+    #[test]
+    fn summaries_omit_zero_already_linked_accounts() {
+        for (linked, added, expected) in [
+            (1, 1, "Imported 1 account."),
+            (2, 2, "Imported 2 accounts."),
+            (2, 1, "Imported 1 account; 1 already linked."),
+            (1, 0, "1 account already linked."),
+        ] {
+            assert_eq!(
+                Summary {
+                    linked,
+                    added,
+                    ..Default::default()
+                }
+                .message(),
+                expected
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn faster_validation_does_not_change_the_first_saved_session() {
+        let mut saved = Vec::new();
+        let summary = run(
+            discovery(&["first", "faster"]),
+            |account| async move {
+                if account.token == "first" {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                Ok(validated(account))
+            },
+            |account| {
+                saved.push(account.token);
+                Ok(true)
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(saved, ["first"]);
+        assert_eq!(summary.linked, 1);
+    }
+
+    #[tokio::test]
+    async fn distinct_accounts_are_saved_in_discovery_order() {
+        let mut saved = Vec::new();
+        run(
+            discovery(&["first", "faster"]),
+            |account| async move {
+                if account.token == "first" {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                let mut account = validated(account);
+                account.id = account.token.clone();
+                Ok(account)
+            },
+            |account| {
+                saved.push(account.token);
+                Ok(true)
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(saved, ["first", "faster"]);
+    }
+
+    #[tokio::test]
+    async fn cancellation_waits_for_an_in_flight_blocking_save_and_reports_what_landed() {
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        let saved = Arc::new(AtomicUsize::new(0));
+        let (started, started_rx) = tokio::sync::oneshot::channel();
+        let (release, release_rx) = std::sync::mpsc::channel();
+        let mut started = Some(started);
+        let mut release_rx = Some(release_rx);
+        let cancel = Cancellation::default();
+        let future = super::run(
+            discovery(&["first", "second"]),
+            |candidate| {
+                let mut account = validated(candidate);
+                account.id = account.token.clone();
+                ready(Ok(account))
+            },
+            |_| {
+                let started = started.take().expect("only the first save can start");
+                let release_rx = release_rx.take().unwrap();
+                let saved = saved.clone();
+                async move {
+                    tokio::task::spawn_blocking(move || {
+                        started.send(()).unwrap();
+                        release_rx.recv().unwrap();
+                        saved.fetch_add(1, Ordering::SeqCst);
+                        Ok(true)
+                    })
+                    .await
+                    .unwrap()
+                }
+            },
+            cancel.clone(),
+        );
+        tokio::pin!(future);
+        tokio::select! {
+            result = &mut future => panic!("reported before save finished: {result:?}"),
+            _ = started_rx => {},
+        }
+        cancel.cancel();
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(10), &mut future)
+                .await
+                .is_err()
+        );
+        assert_eq!(saved.load(Ordering::SeqCst), 0);
+        release.send(()).unwrap();
+        let summary = future.await.unwrap();
+        assert!(summary.cancelled);
+        assert_eq!((summary.linked, summary.added), (1, 1));
+        assert_eq!(saved.load(Ordering::SeqCst), 1);
+        assert_eq!(summary.message(), "Import cancelled. Imported 1 account.");
+    }
+
+    #[tokio::test]
+    async fn cancellation_before_the_worker_starts_never_validates_or_saves() {
+        let cancel = Cancellation::default();
+        cancel.cancel();
+        let summary = super::run(
+            discovery(&["one"]),
+            |_| -> std::future::Ready<Result<Validated>> { panic!("validation after cancel") },
+            |_| ready(Ok(true)),
+            cancel,
+        )
+        .await
+        .unwrap();
+        assert!(summary.cancelled);
+        assert_eq!(summary.linked, 0);
     }
 
     #[test]
@@ -285,6 +486,7 @@ mod tests {
             Failure::Timeout,
             Failure::Service(503),
             Failure::Network,
+            Failure::Client,
             Failure::Invalid,
         ] {
             let failure = run(
@@ -342,6 +544,7 @@ mod tests {
                 }
             },
             |_| ready(Ok(true)),
+            Cancellation::default(),
         )
         .await
         .unwrap();
@@ -355,6 +558,7 @@ mod tests {
         use std::cell::Cell;
         let started = Cell::new(0);
         let saved = Cell::new(0);
+        let cancel = Cancellation::default();
         let future = super::run(
             discovery(&["1", "2", "3", "4", "5"]),
             |_| {
@@ -365,12 +569,18 @@ mod tests {
                 saved.set(saved.get() + 1);
                 ready(Ok(true))
             },
+            cancel.clone(),
         );
-        assert!(
-            tokio::time::timeout(std::time::Duration::from_millis(10), future)
-                .await
-                .is_err()
+        let (_, summary) = tokio::join!(
+            async {
+                tokio::task::yield_now().await;
+                cancel.cancel();
+            },
+            future
         );
+        let summary = summary.unwrap();
+        assert!(summary.cancelled);
+        assert_eq!(summary.message(), "Import cancelled.");
         assert_eq!(started.get(), VALIDATIONS);
         assert_eq!(saved.get(), 0);
     }

@@ -2173,6 +2173,8 @@ struct Adapter {
     /// Linking a Discord account by QR code; dropping it stops the linking.
     #[cfg(feature = "discord")]
     linking: Option<yapfast_core::runtime::BackgroundTask<()>>,
+    #[cfg(feature = "discord")]
+    import_cancel: Option<yapfast_core::discord_link::Cancellation>,
     /// Counts linking runs, so a replaced run's last words are ignored.
     #[cfg(feature = "discord")]
     link_run: u64,
@@ -2457,6 +2459,8 @@ impl Adapter {
                 tray: None,
                 #[cfg(feature = "discord")]
                 linking: None,
+                #[cfg(feature = "discord")]
+                import_cancel: None,
                 #[cfg(feature = "discord")]
                 link_run: 0,
                 #[cfg(feature = "discord")]
@@ -2799,8 +2803,12 @@ impl Adapter {
                 Effect::StopDiscordLink => {
                     #[cfg(feature = "discord")]
                     {
-                        self.linking = None;
-                        self.link_run += 1;
+                        if let Some(cancel) = &self.import_cancel {
+                            cancel.cancel();
+                        } else {
+                            self.linking = None;
+                            self.link_run += 1;
+                        }
                     }
                 }
                 Effect::Notify(alert) => {
@@ -2886,8 +2894,9 @@ impl Adapter {
     fn import_discord(&mut self) {
         self.link_run += 1;
         let run = self.link_run;
-        let (task, mut progress) = yapfast_core::discord_link::import(&self.runtime);
+        let (task, mut progress, cancel) = yapfast_core::discord_link::import(&self.runtime);
         self.linking = Some(task);
+        self.import_cancel = Some(cancel);
         let weak = self.weak.clone();
         let task = slint::spawn_local(async move {
             while let Some(step) = progress.recv().await {
@@ -2899,6 +2908,9 @@ impl Adapter {
                 if adapter.link_run != run {
                     return;
                 }
+                // Import reports only after all credential writes have finished.
+                adapter.import_cancel = None;
+                adapter.linking = None;
                 let effects = adapter.app.linking(step);
                 adapter.execute(effects);
                 if let Some(window) = window {
@@ -2906,16 +2918,21 @@ impl Adapter {
                 }
             }
             // A failed worker must not leave the sign-in screen waiting after
-            // its progress channel closes. Cancelled runs are ignored.
+            // its progress channel closes, including while cancellation waits.
             if let Some(adapter) = weak.upgrade() {
                 let window = adapter.borrow().window.upgrade();
                 let mut adapter = adapter.borrow_mut();
                 if adapter.link_run == run
                     && matches!(
                         adapter.app.state.discord_link,
-                        Some(yapfast_core::application::DiscordLink::Importing)
+                        Some(
+                            yapfast_core::application::DiscordLink::Importing
+                                | yapfast_core::application::DiscordLink::CancellingImport
+                        )
                     )
                 {
+                    adapter.import_cancel = None;
+                    adapter.linking = None;
                     let effects =
                         adapter
                             .app
@@ -2932,6 +2949,7 @@ impl Adapter {
         if let Err(error) = task {
             tracing::error!(%error, "could not follow importing Discord");
             self.linking = None;
+            self.import_cancel = None;
             let effects = self
                 .app
                 .linking(yapfast_core::discord_link::Progress::Failed(

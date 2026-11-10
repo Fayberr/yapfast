@@ -207,7 +207,7 @@ export component ManageAccountsDialog inherits Rectangle {
                     reopen => { root.open-discord-captcha(); }
                     link-token(token) => { root.link-discord-token(token); }
                 }
-                if root.linking && root.import-available && (root.link-phase == 0 || root.link-phase == 4): ActionButton {
+                if root.linking && root.import-available && (root.link-phase == 0 || root.link-phase == 4 || root.link-phase == 8): ActionButton {
                     text: "Import accounts from the Discord app";
                     clicked => { root.import-discord(); }
                 }

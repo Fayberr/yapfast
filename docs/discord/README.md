@@ -35,7 +35,7 @@ The settings protobuf is in
 [discord-protos](https://github.com/discord-userdoccers/discord-protos).
 
 Windows also has an explicit [desktop account import](account-import.md) flow.
-Its storage formats, limits and verification scope are documented separately.
+Its storage formats, limits and cancellation behavior are documented separately.
 
 ## Risk to accounts
 

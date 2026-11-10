@@ -890,7 +890,15 @@ impl Adapter {
         window.set_online(state.online);
         // Only the sign-in screen offers it, and finding out reads the OS
         // credential store or the disk.
-        if !workspace {
+        if !workspace
+            && !matches!(
+                state.discord_link,
+                Some(
+                    yapfast_core::application::DiscordLink::Importing
+                        | yapfast_core::application::DiscordLink::CancellingImport
+                )
+            )
+        {
             window.set_restore_available(yapfast_core::chat::can_restore(&self.root));
         }
         window.set_dms_selected(state.navigation == Navigation::DirectMessages);
@@ -949,6 +957,8 @@ impl Adapter {
                 Some(DiscordLink::Failed(error)) => (4, "", error.as_str()),
                 Some(DiscordLink::Checking) => (6, "", ""),
                 Some(DiscordLink::Importing) => (7, "", ""),
+                Some(DiscordLink::ImportFailed(error)) => (8, "", error.as_str()),
+                Some(DiscordLink::CancellingImport) => (9, "", ""),
             };
             window.set_link_phase(phase);
             window.set_link_name(name.into());

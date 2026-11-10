@@ -149,6 +149,8 @@ pub enum DiscordLink {
     Checking,
     /// Yapfast is reading and validating the desktop client's saved accounts.
     Importing,
+    /// Cancellation waits for a credential save that has already started.
+    CancellingImport,
     /// The code to scan, as the address it carries.
     Code(String),
     /// Someone scanned it, by their username, and confirms on their phone.
@@ -157,6 +159,7 @@ pub enum DiscordLink {
     /// at this address, open in the browser.
     Captcha(String),
     Failed(String),
+    ImportFailed(String),
 }
 
 /// Manage Accounts, the dialog that lists the Discord accounts linked on

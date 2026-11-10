@@ -65,7 +65,7 @@ export component SignInScreen inherits Rectangle {
                             }
                             // Pull in the accounts already signed in to the
                             // Discord app on this computer, without the phone.
-                            if root.import-available && !root.busy && (root.link-phase == 0 || root.link-phase == 4): ActionButton {
+                            if root.import-available && !root.busy && (root.link-phase == 0 || root.link-phase == 4 || root.link-phase == 8): ActionButton {
                                 text: "Import accounts from the Discord app";
                                 clicked => { root.import-discord(); }
                             }
@@ -75,6 +75,10 @@ export component SignInScreen inherits Rectangle {
                             }
                             if root.notice != "" && (root.busy || root.link-phase == 0): Text {
                                 text: root.notice; color: root.busy ? Theme.secondary : Theme.danger; font-size: 15px; wrap: word-wrap;
+                            }
+                            if root.restore-available && !root.busy && root.link-phase == 0: ActionButton {
+                                text: "Continue with saved account";
+                                clicked => { root.restore(); }
                             }
                         }
                         if root.matrix-build: VerticalLayout {
