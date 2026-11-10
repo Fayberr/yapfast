@@ -147,6 +147,8 @@ pub enum DiscordLink {
     Starting,
     /// Discord is checking a pasted token.
     Checking,
+    /// Yapfast is reading and validating the desktop client's saved accounts.
+    Importing,
     /// The code to scan, as the address it carries.
     Code(String),
     /// Someone scanned it, by their username, and confirms on their phone.
@@ -3750,20 +3752,19 @@ impl Application {
                 vec![Effect::LinkDiscordToken(token)]
             }
             Action::ImportDiscord => {
-                if !self.can_link_discord() {
+                if !self.can_link_discord()
+                    || self.state.discord_link == Some(DiscordLink::Importing)
+                {
                     return vec![];
                 }
-                self.state.discord_link = Some(DiscordLink::Checking);
+                self.state.discord_link = Some(DiscordLink::Importing);
                 vec![Effect::ImportDiscord]
             }
             Action::OpenDiscordCaptcha => match &self.state.discord_link {
                 Some(DiscordLink::Captcha(page)) => vec![Effect::OpenPage(page.clone())],
                 _ => vec![],
             },
-            Action::CancelDiscordLink => match self.state.discord_link.take() {
-                Some(_) => vec![Effect::StopDiscordLink],
-                None => vec![],
-            },
+            Action::CancelDiscordLink => self.cancel_discord_link(),
             Action::UnlinkDiscord => {
                 if self.state.discord_linked && self.state.account.is_some() {
                     // Only the active account, as logging out in Discord does.
@@ -3786,10 +3787,7 @@ impl Application {
             }
             Action::CloseManageAccounts => {
                 self.state.manage_accounts = None;
-                match self.state.discord_link.take() {
-                    Some(_) => vec![Effect::StopDiscordLink],
-                    None => vec![],
-                }
+                self.cancel_discord_link()
             }
             Action::OpenAccountMenu(id) => {
                 if let Some(dialog) = &mut self.state.manage_accounts {

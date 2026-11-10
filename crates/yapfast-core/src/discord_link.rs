@@ -4,15 +4,18 @@
 //! the accounts already linked, and becomes the active one; see
 //! `yapfast_discord::remote_auth` and `yapfast_discord::token`.
 
+use anyhow::Context;
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 use yapfast_discord::{
     api::{Api, Refused},
-    import::{self, Unsupported},
+    import,
     remote_auth::{self, Step, Stopped},
     token,
 };
 
 use crate::runtime::{BackgroundRuntime, BackgroundTask};
+
+mod importing;
 
 /// How linking goes, for [`crate::application::Application::linking`].
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -25,6 +28,8 @@ pub enum Progress {
     Captcha(String),
     /// The account is linked and its login saved.
     Linked,
+    /// A validated import finished, with counts and any partial failures.
+    Imported(String),
     /// The code expired before anyone confirmed it.
     Expired,
     Failed(String),
@@ -65,65 +70,57 @@ pub fn import(runtime: &BackgroundRuntime) -> (BackgroundTask<()>, UnboundedRece
 /// and tells `progress` how it went. A login the client holds but Discord has
 /// logged out is skipped, not an error.
 async fn run_import(progress: impl Fn(Progress)) {
-    let found = match import::discover() {
-        Ok(found) => found,
-        Err(error) if error.is::<Unsupported>() => {
-            return progress(Progress::Failed(error.to_string()));
-        }
-        Err(error) => {
-            tracing::warn!(
-                error = format!("{error:#}"),
-                "could not read the Discord app's logins"
-            );
-            return progress(Progress::Failed(format!(
-                "Yapfast couldn't read the Discord app's accounts: {error}"
-            )));
-        }
-    };
-    if found.is_empty() {
-        return progress(Progress::Failed(
-            "No Discord accounts were found in the Discord app on this device.".into(),
-        ));
-    }
-
-    let mut added = 0usize;
-    for account in found {
-        let token = match token::clean(&account.token) {
-            Ok(token) => token,
-            Err(_) => continue,
+    // Filesystem reads and DPAPI must not occupy the network worker threads.
+    let discovery =
+        match importing::discovery_result(tokio::task::spawn_blocking(import::discover).await) {
+            Ok(discovery) => discovery,
+            Err(error) => return progress(Progress::Failed(error.to_string())),
         };
-        // A login the client kept but Discord logged out, or one Discord no
-        // longer accepts, is left out rather than linked dead.
-        let described = async {
-            let api = Api::new(token.clone())?;
-            api.learn_build_number().await;
-            let me = api.me().await?;
-            let fresh = token::adopt(&token)?;
-            let name = me.global_name.unwrap_or_default();
-            // The avatar fills in when the account first connects; the name
-            // shows in the switcher until then.
-            token::describe(&token, &me.username, &name, "")?;
-            anyhow::Ok(fresh)
-        };
-        match described.await {
-            Ok(true) => added += 1,
-            Ok(false) => {}
-            Err(error) => tracing::info!(
+    if !discovery.accounts.is_empty() {
+        match Api::anonymous() {
+            Ok(api) => api.learn_build_number().await,
+            Err(error) => tracing::warn!(
                 error = format!("{error:#}"),
-                flavour = account.flavour.label(),
-                "skipped a Discord app login that wouldn't link"
+                "could not prepare Discord build-number lookup"
             ),
         }
     }
-
-    // Any linked account, new or already there, means there's one to sign in
-    // with; none usable is the one failure worth showing.
-    progress(if added > 0 || token::listing().is_ok_and(|list| !list.accounts.is_empty()) {
-        Progress::Linked
-    } else {
-        Progress::Failed(
-            "The Discord app's accounts couldn't be linked. They may be signed out.".into(),
-        )
+    let linked = importing::run(
+        discovery,
+        |candidate| async move {
+            // A stalled request must not leave the sign-in screen waiting forever.
+            tokio::time::timeout(std::time::Duration::from_secs(30), async move {
+                let token = token::clean(&candidate.token).context(importing::Failure::Invalid)?;
+                let api = Api::new(token.clone()).context(importing::Failure::Network)?;
+                let me = api.me().await.map_err(|error| {
+                    let cause = match error.downcast_ref::<Refused>() {
+                        Some(Refused(status)) => importing::Failure::refused(status.as_u16()),
+                        None => importing::Failure::Network,
+                    };
+                    error.context(cause)
+                })?;
+                Ok(importing::Validated {
+                    id: me.id,
+                    token,
+                    username: me.username,
+                    name: me.global_name.unwrap_or_default(),
+                })
+            })
+            .await
+            .map_err(|error| anyhow::Error::new(error).context(importing::Failure::Timeout))?
+        },
+        |account| async move {
+            tokio::task::spawn_blocking(move || {
+                token::adopt(&account.token, &account.username, &account.name)
+            })
+            .await
+            .context("Discord credential-store worker failed")?
+        },
+    )
+    .await;
+    progress(match linked {
+        Ok(summary) => Progress::Imported(summary.message()),
+        Err(error) => Progress::Failed(error.to_string()),
     });
 }
 

@@ -29,6 +29,7 @@ export component SignInScreen inherits Rectangle {
     callback link-discord;
     callback link-discord-token(string);
     callback import-discord;
+    callback cancel-discord-link;
     callback open-discord-captcha;
     background: Theme.rail;
     Text { x: 32px; y: 24px; text: "Yapfast"; color: Theme.accent; font-size: 24px; font-weight: 900; letter-spacing: -0.4px; }
@@ -54,7 +55,7 @@ export component SignInScreen inherits Rectangle {
                         if !root.matrix-build: VerticalLayout {
                             spacing: 8px; horizontal-stretch: 1; min-width: 300px;
                             Text { text: "Sign in to Yapfast"; color: Theme.text; font-size: 26px; font-weight: 700; horizontal-alignment: center; }
-                            Text { text: "Link your Discord account with your phone."; color: Theme.secondary; horizontal-alignment: center; wrap: word-wrap; }
+                            Text { text: "Link your Discord account."; color: Theme.secondary; horizontal-alignment: center; wrap: word-wrap; }
                             Rectangle { height: 12px; }
                             if !root.busy: DiscordLinkPanel {
                                 phase: root.link-phase; code: root.link-code; name: root.link-name; note: root.link-note;
@@ -64,9 +65,13 @@ export component SignInScreen inherits Rectangle {
                             }
                             // Pull in the accounts already signed in to the
                             // Discord app on this computer, without the phone.
-                            if root.import-available && !root.busy && root.link-phase == 0: ActionButton {
+                            if root.import-available && !root.busy && (root.link-phase == 0 || root.link-phase == 4): ActionButton {
                                 text: "Import accounts from the Discord app";
                                 clicked => { root.import-discord(); }
+                            }
+                            if root.link-phase == 7: ActionButton {
+                                text: "Cancel";
+                                clicked => { root.cancel-discord-link(); }
                             }
                             if root.notice != "" && (root.busy || root.link-phase == 0): Text {
                                 text: root.notice; color: root.busy ? Theme.secondary : Theme.danger; font-size: 15px; wrap: word-wrap;

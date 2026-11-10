@@ -2472,6 +2472,7 @@ export component YapfastWindow inherits Window {
         link-discord => { root.link-discord(); }
         link-discord-token(token) => { root.link-discord-token(token); }
         import-discord => { root.import-discord(); }
+        cancel-discord-link => { root.cancel-discord-link(); }
         open-discord-captcha => { root.open-discord-captcha(); }
     }
 
@@ -4597,12 +4598,14 @@ export component YapfastWindow inherits Window {
     if manage-accounts-motion.shown: ManageAccountsDialog {
         motion: manage-accounts-motion.amount;
         accounts: root.accounts; menu-id: root.account-menu-id;
+        import-available: root.discord-import-available;
         link-phase: root.link-phase; link-code: root.link-code; link-name: root.link-name; link-note: root.link-note;
         choose(id) => { root.switch-discord-account(id); }
         log-out(id) => { root.log-out-discord-account(id); }
         open-menu(id) => { root.open-account-menu(id); }
         link-discord => { root.link-discord(); }
         link-discord-token(token) => { root.link-discord-token(token); }
+        import-discord => { root.import-discord(); }
         open-discord-captcha => { root.open-discord-captcha(); }
         cancel-discord-link => { root.cancel-discord-link(); }
         close => { root.close-manage-accounts(); }

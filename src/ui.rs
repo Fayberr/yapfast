@@ -2905,10 +2905,42 @@ impl Adapter {
                     adapter.refresh(&window);
                 }
             }
+            // A failed worker must not leave the sign-in screen waiting after
+            // its progress channel closes. Cancelled runs are ignored.
+            if let Some(adapter) = weak.upgrade() {
+                let window = adapter.borrow().window.upgrade();
+                let mut adapter = adapter.borrow_mut();
+                if adapter.link_run == run
+                    && matches!(
+                        adapter.app.state.discord_link,
+                        Some(yapfast_core::application::DiscordLink::Importing)
+                    )
+                {
+                    let effects =
+                        adapter
+                            .app
+                            .linking(yapfast_core::discord_link::Progress::Failed(
+                                "Account import stopped. Please retry.".into(),
+                            ));
+                    adapter.execute(effects);
+                    if let Some(window) = window {
+                        adapter.refresh(&window);
+                    }
+                }
+            }
         });
         if let Err(error) = task {
             tracing::error!(%error, "could not follow importing Discord");
             self.linking = None;
+            let effects = self
+                .app
+                .linking(yapfast_core::discord_link::Progress::Failed(
+                    "Account import could not start. Please retry.".into(),
+                ));
+            self.execute(effects);
+            if let Some(window) = self.window.upgrade() {
+                self.refresh(&window);
+            }
         }
     }
 

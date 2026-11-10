@@ -22,6 +22,8 @@ rand = "0.9"
 # Linking by QR code: Discord's remote login encrypts what it sends with the
 # client's RSA key, OAEP with SHA-256.
 rsa = { version = "0.9", features = ["getrandom"] }
+# Read a copy of Discord's LevelDB in memory, including Snappy tables and WALs.
+rusty-leveldb = { version = "=4.0.1", default-features = false }
 sha2 = "0.10"
 anyhow.workspace = true
 base64 = "0.22"

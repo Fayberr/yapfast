@@ -5360,6 +5360,83 @@ fn links_discord_by_token() {
 
 #[test]
 #[cfg(feature = "discord")]
+fn first_import_keeps_its_partial_failure_notice_while_connecting() {
+    use crate::discord_link::Progress;
+    let mut app = Application::default();
+    app.dispatch(Action::ImportDiscord);
+    let message = "Imported 1 account. 2 sessions could not be linked. 1 unreadable profile.";
+    assert!(matches!(
+        app.linking(Progress::Imported(message.into())).as_slice(),
+        [Effect::Start(chat::Start::Restore)]
+    ));
+    assert_eq!(app.state.notice.as_deref(), Some(message));
+    assert!(app.state.busy);
+}
+
+#[test]
+#[cfg(feature = "discord")]
+fn retries_and_cancels_discord_import_without_reconnecting_the_active_account() {
+    use crate::discord_link::Progress;
+    let mut app = Application::default();
+    assert!(matches!(
+        app.dispatch(Action::ImportDiscord).as_slice(),
+        [Effect::ImportDiscord]
+    ));
+    assert_eq!(app.state.discord_link, Some(DiscordLink::Importing));
+    assert!(
+        app.dispatch(Action::ImportDiscord).is_empty(),
+        "already importing"
+    );
+    app.linking(Progress::Failed("Close Discord and retry.".into()));
+    assert!(matches!(
+        app.dispatch(Action::ImportDiscord).as_slice(),
+        [Effect::ImportDiscord]
+    ));
+    assert!(matches!(
+        app.dispatch(Action::CancelDiscordLink).as_slice(),
+        [Effect::StopDiscordLink]
+    ));
+    assert!(
+        app.linking(Progress::Imported("Imported 1 account.".into()))
+            .is_empty()
+    );
+
+    let mut app = connected();
+    app.state.discord_linked = true;
+    linked_accounts(&mut app, &["1"], "1");
+    app.dispatch(Action::OpenManageAccounts);
+    assert!(matches!(
+        app.dispatch(Action::ImportDiscord).as_slice(),
+        [Effect::ImportDiscord]
+    ));
+    assert!(matches!(
+        app.dispatch(Action::CancelDiscordLink).as_slice(),
+        [
+            Effect::StopDiscordLink,
+            Effect::Backend(Command::Discord(DiscordCommand::ListAccounts))
+        ]
+    ));
+    assert_eq!(app.state.discord_active, "1");
+    app.dispatch(Action::ImportDiscord);
+    let effects = app.linking(Progress::Imported("Imported 1 account.".into()));
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::Backend(Command::Discord(
+            DiscordCommand::ListAccounts
+        ))]
+    ));
+    assert_eq!(app.state.discord_active, "1");
+    assert!(
+        app.state
+            .notice
+            .as_deref()
+            .unwrap()
+            .contains("Imported 1 account")
+    );
+}
+
+#[test]
+#[cfg(feature = "discord")]
 fn adds_friends_by_username_and_sets_the_custom_status() {
     use yapfast_discord::service::{Snapshot, Status};
     let mut app = Application::default();

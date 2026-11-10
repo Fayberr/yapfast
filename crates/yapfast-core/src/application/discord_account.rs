@@ -223,6 +223,23 @@ impl Application {
                 return vec![Effect::LinkDiscord];
             }
             Progress::Failed(error) => *link = DiscordLink::Failed(error),
+            Progress::Imported(message) => {
+                let already_connected = self.state.discord_linked && self.state.account.is_some();
+                self.state.discord_link = None;
+                self.state.manage_accounts = None;
+                self.state.discord_linked = true;
+                let effects = if already_connected {
+                    vec![Effect::Backend(Command::Discord(
+                        DiscordCommand::ListAccounts,
+                    ))]
+                } else if self.state.account.is_some() {
+                    vec![Effect::Backend(Command::Discord(DiscordCommand::Start))]
+                } else {
+                    self.start(chat::Start::Restore)
+                };
+                self.state.notice = Some(message);
+                return effects;
+            }
             Progress::Linked => {
                 self.state.discord_link = None;
                 self.state.discord_linked = true;
@@ -672,6 +689,24 @@ impl Application {
     #[cfg(feature = "discord")]
     fn prefetch_emoji(&mut self) -> Vec<Effect> {
         self.cache_emoji_pictures()
+    }
+
+    /// Import may have saved accounts before cancellation. Show those without
+    /// interrupting the account that is already connected.
+    pub(super) fn cancel_discord_link(&mut self) -> Vec<Effect> {
+        let Some(link) = self.state.discord_link.take() else {
+            return vec![];
+        };
+        let mut effects = vec![Effect::StopDiscordLink];
+        if link == DiscordLink::Importing
+            && self.state.discord_linked
+            && self.state.account.is_some()
+        {
+            effects.push(Effect::Backend(Command::Discord(
+                DiscordCommand::ListAccounts,
+            )));
+        }
+        effects
     }
 
     /// Whether linking a Discord account can start: with none linked, or from
