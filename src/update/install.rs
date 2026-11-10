@@ -93,7 +93,9 @@ pub fn target_for(
         .iter()
         .find(|asset| asset.name.ends_with(suffix))
         .ok_or_else(|| match source {
-            Source::Installer => tr("There's no Windows installer for this version yet.").to_owned(),
+            Source::Installer => {
+                tr("There's no Windows installer for this version yet.").to_owned()
+            }
             _ => tr("There's no AppImage for this version yet.").to_owned(),
         })?
         .clone();
@@ -475,10 +477,7 @@ pub fn run_installer(_: &Path, _: &Path, _: &[String]) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::update::Version;
-    use yapfast_core::{
-    i18n::{fill, tr},
-    runtime::BackgroundRuntime,
-};
+    use yapfast_core::runtime::BackgroundRuntime;
 
     fn asset(name: &str) -> Asset {
         Asset {

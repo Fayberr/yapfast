@@ -5128,7 +5128,8 @@ pub async fn run(
                             Err(error) => {
                                 tracing::warn!(%error, "could not switch the Discord account");
                                 let _ = events.send(Event::Error(
-                                    crate::i18n::tr("Could not switch to that Discord account.").into(),
+                                    crate::i18n::tr("Could not switch to that Discord account.")
+                                        .into(),
                                 ));
                             }
                         }
@@ -5160,7 +5161,10 @@ pub async fn run(
                                 Err(error) => {
                                     tracing::warn!(%error, "could not forget the Discord login");
                                     let _ = events.send(Event::Error(
-                                        crate::i18n::tr("Could not log out of that Discord account.").into(),
+                                        crate::i18n::tr(
+                                            "Could not log out of that Discord account.",
+                                        )
+                                        .into(),
                                     ));
                                 }
                             }
@@ -5169,7 +5173,8 @@ pub async fn run(
                             if let Err(error) = yapfast_discord::token::forget_account(&id) {
                                 tracing::warn!(%error, "could not forget the Discord login");
                                 let _ = events.send(Event::Error(
-                                    crate::i18n::tr("Could not log out of that Discord account.").into(),
+                                    crate::i18n::tr("Could not log out of that Discord account.")
+                                        .into(),
                                 ));
                             }
                         }
