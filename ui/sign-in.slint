@@ -15,6 +15,8 @@ export component SignInScreen inherits Rectangle {
     in property <image> link-code;
     in property <string> link-name;
     in property <string> link-note;
+    // Whether the vanilla Discord client's accounts can be imported here.
+    in property <bool> import-available;
     // The Matrix sign-in focuses its first field each time this counts up.
     in property <int> sign-in-focus;
     in-out property <string> graphics-notice;
@@ -26,6 +28,7 @@ export component SignInScreen inherits Rectangle {
     callback explore-preview;
     callback link-discord;
     callback link-discord-token(string);
+    callback import-discord;
     callback open-discord-captcha;
     background: Theme.rail;
     Text { x: 32px; y: 24px; text: "Yapfast"; color: Theme.accent; font-size: 24px; font-weight: 900; letter-spacing: -0.4px; }
@@ -58,6 +61,12 @@ export component SignInScreen inherits Rectangle {
                                 begin => { root.link-discord(); }
                                 reopen => { root.open-discord-captcha(); }
                                 link-token(token) => { root.link-discord-token(token); }
+                            }
+                            // Pull in the accounts already signed in to the
+                            // Discord app on this computer, without the phone.
+                            if root.import-available && !root.busy && root.link-phase == 0: ActionButton {
+                                text: "Import accounts from the Discord app";
+                                clicked => { root.import-discord(); }
                             }
                             if root.notice != "" && (root.busy || root.link-phase == 0): Text {
                                 text: root.notice; color: root.busy ? Theme.secondary : Theme.danger; font-size: 15px; wrap: word-wrap;

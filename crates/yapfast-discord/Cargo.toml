@@ -57,6 +57,11 @@ webrtc-sys = "=0.3.35"
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "0.2.189"
 
+# Unwrapping the key the Discord app protects its stored logins with, so they
+# can be imported; see src/import.rs.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+
 [dev-dependencies]
 # Building DAVE handshake messages in tests, at the versions davey uses.
 openmls = "0.8.1"

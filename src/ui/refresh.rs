@@ -919,6 +919,8 @@ impl Adapter {
         );
         window.set_discord_build(cfg!(feature = "discord"));
         window.set_matrix_build(cfg!(feature = "matrix"));
+        #[cfg(feature = "discord")]
+        window.set_discord_import_available(yapfast_discord::import::supported());
         // Without Matrix, the account's dot is its Discord status.
         window.set_account_presence(
             if cfg!(feature = "matrix") || state.preview {

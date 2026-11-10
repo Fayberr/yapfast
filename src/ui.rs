@@ -2790,6 +2790,10 @@ impl Adapter {
                     #[cfg(feature = "discord")]
                     self.link_discord(Some(token));
                 }
+                Effect::ImportDiscord => {
+                    #[cfg(feature = "discord")]
+                    self.import_discord();
+                }
                 Effect::OpenPage(page) => browser::open(&page),
                 Effect::CopyPicture(picture) => crate::copy::picture(picture),
                 Effect::StopDiscordLink => {
@@ -2871,6 +2875,39 @@ impl Adapter {
         });
         if let Err(error) = task {
             tracing::error!(%error, "could not follow linking Discord");
+            self.linking = None;
+        }
+    }
+
+    /// Imports the accounts the vanilla Discord client keeps on this device,
+    /// replacing any linking under way. Its progress reaches the app the same
+    /// way linking's does, so the sign-in screen follows it the same way.
+    #[cfg(feature = "discord")]
+    fn import_discord(&mut self) {
+        self.link_run += 1;
+        let run = self.link_run;
+        let (task, mut progress) = yapfast_core::discord_link::import(&self.runtime);
+        self.linking = Some(task);
+        let weak = self.weak.clone();
+        let task = slint::spawn_local(async move {
+            while let Some(step) = progress.recv().await {
+                let Some(adapter) = weak.upgrade() else {
+                    return;
+                };
+                let window = adapter.borrow().window.upgrade();
+                let mut adapter = adapter.borrow_mut();
+                if adapter.link_run != run {
+                    return;
+                }
+                let effects = adapter.app.linking(step);
+                adapter.execute(effects);
+                if let Some(window) = window {
+                    adapter.refresh(&window);
+                }
+            }
+        });
+        if let Err(error) = task {
+            tracing::error!(%error, "could not follow importing Discord");
             self.linking = None;
         }
     }

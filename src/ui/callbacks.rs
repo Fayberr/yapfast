@@ -1233,6 +1233,7 @@ pub(super) fn bind_callbacks(window: &YapfastWindow, adapter: &Rc<RefCell<Adapte
     bind_item!(on_message_friend, Action::MessagePerson);
     bind!(on_link_discord, Action::LinkDiscord);
     bind_item!(on_link_discord_token, Action::LinkDiscordToken);
+    bind!(on_import_discord, Action::ImportDiscord);
     bind!(on_open_discord_captcha, Action::OpenDiscordCaptcha);
     bind!(on_cancel_discord_link, Action::CancelDiscordLink);
     bind!(on_unlink_discord, Action::UnlinkDiscord);

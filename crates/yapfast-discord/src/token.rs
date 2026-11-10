@@ -415,6 +415,20 @@ pub fn store(token: &str) -> Result<()> {
     with_vault(|vault| link(vault, &token, true).map(drop))
 }
 
+/// Links a login imported from the vanilla Discord client. Unlike [`store`],
+/// it doesn't take over the active account from one already linked: an import
+/// adds accounts beside the one in use, and only becomes active when none was.
+/// Returns whether the account was new, so the caller can count what it added.
+pub fn adopt(token: &str) -> Result<bool> {
+    let token = clean(token)?;
+    with_vault(|vault| {
+        let index = read_index(vault)?;
+        let known = locate(vault, &index, &token)?.is_some();
+        link(vault, &token, false)?;
+        Ok(!known)
+    })
+}
+
 /// Discord refreshed the login `earlier` to `token`: its account keeps it,
 /// where it was in the list and whether it's the active one. Nothing is
 /// linked if the account was logged out meanwhile.

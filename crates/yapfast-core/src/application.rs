@@ -2158,6 +2158,9 @@ pub enum Action {
     /// again; stop linking; or forget the linked account on this device.
     LinkDiscord,
     LinkDiscordToken(String),
+    /// Import the accounts already signed in to the vanilla Discord client on
+    /// this device.
+    ImportDiscord,
     OpenDiscordCaptcha,
     CancelDiscordLink,
     UnlinkDiscord,
@@ -2305,6 +2308,10 @@ pub enum Effect {
     /// under way. The same with a pasted token. Stop linking.
     LinkDiscord,
     LinkDiscordToken(String),
+    /// Import the accounts the vanilla Discord client keeps on this device,
+    /// with `crate::discord_link::import`, reporting through
+    /// `Application::linking` as linking does.
+    ImportDiscord,
     StopDiscordLink,
     /// Open this web page in the browser.
     OpenPage(String),
@@ -3741,6 +3748,13 @@ impl Application {
                 }
                 self.state.discord_link = Some(DiscordLink::Checking);
                 vec![Effect::LinkDiscordToken(token)]
+            }
+            Action::ImportDiscord => {
+                if !self.can_link_discord() {
+                    return vec![];
+                }
+                self.state.discord_link = Some(DiscordLink::Checking);
+                vec![Effect::ImportDiscord]
             }
             Action::OpenDiscordCaptcha => match &self.state.discord_link {
                 Some(DiscordLink::Captcha(page)) => vec![Effect::OpenPage(page.clone())],
