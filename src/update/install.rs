@@ -31,7 +31,10 @@ use std::{
 };
 
 use sha2::{Digest, Sha256};
-use yapfast_core::runtime::BackgroundRuntime;
+use yapfast_core::{
+    i18n::{fill, tr},
+    runtime::BackgroundRuntime,
+};
 
 use super::{Asset, Release, Source};
 
@@ -75,13 +78,14 @@ pub fn target_for(
         Source::AppImage if cfg!(target_arch = "x86_64") => "-x86_64.AppImage",
         Source::Installer if cfg!(target_arch = "x86_64") => "-windows-x64-setup.exe",
         Source::AppImage | Source::Installer => {
-            return Err("There's no download for your system yet.".into());
+            return Err(tr("There's no download for your system yet.").into());
         }
-        Source::Manager(name) => return Err(format!("{name} updates this copy.")),
+        Source::Manager(name) => return Err(fill(tr("{} updates this copy."), &[&name])),
         Source::Other => {
-            return Err(
-                "This copy can't update itself. Get the new version from the release page.".into(),
-            );
+            return Err(tr(
+                "This copy can't update itself. Get the new version from the release page.",
+            )
+            .into());
         }
     };
     let asset = release
@@ -89,34 +93,34 @@ pub fn target_for(
         .iter()
         .find(|asset| asset.name.ends_with(suffix))
         .ok_or_else(|| match source {
-            Source::Installer => "There's no Windows installer for this version yet.".to_owned(),
-            _ => "There's no AppImage for this version yet.".to_owned(),
+            Source::Installer => tr("There's no Windows installer for this version yet.").to_owned(),
+            _ => tr("There's no AppImage for this version yet.").to_owned(),
         })?
         .clone();
-    sums_of(release).ok_or("This release doesn't publish SHA256SUMS.txt.")?;
+    sums_of(release).ok_or(tr("This release doesn't publish SHA256SUMS.txt."))?;
     match source {
         Source::AppImage => {
             let current = appimage
-                .ok_or("The AppImage's own path isn't known.")?
+                .ok_or(tr("The AppImage's own path isn't known."))?
                 .to_path_buf();
-            let folder = current.parent().ok_or("The AppImage has no folder.")?;
+            let folder = current.parent().ok_or(tr("The AppImage has no folder."))?;
             if !writable(folder) {
-                return Err("Yapfast can't write to the AppImage's folder.".into());
+                return Err(tr("Yapfast can't write to the AppImage's folder.").into());
             }
             Ok(Target::AppImage { asset, current })
         }
         _ => {
-            let folder = program.parent().ok_or("Yapfast has no folder.")?;
+            let folder = program.parent().ok_or(tr("Yapfast has no folder."))?;
             // The installer left its uninstaller there; a folder without one
             // was unpacked by hand or installed by something else.
             if !folder.join("unins000.exe").is_file() {
-                return Err(
-                    "This copy can't update itself. Get the new version from the release page."
-                        .into(),
-                );
+                return Err(tr(
+                    "This copy can't update itself. Get the new version from the release page.",
+                )
+                .into());
             }
             if !writable(folder) {
-                return Err("Yapfast can't write to its own folder.".into());
+                return Err(tr("Yapfast can't write to its own folder.").into());
             }
             Ok(Target::Installer {
                 asset,
@@ -227,7 +231,7 @@ async fn fetch_sums(
         .content_length()
         .is_some_and(|length| length > 1 << 20)
     {
-        return Err("The release's sums are too large to be right.".into());
+        return Err(tr("The release's sums are too large to be right.").into());
     }
     let text = response
         .text()
@@ -293,16 +297,18 @@ fn smoke_test(program: &Path) -> Result<(), String> {
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .spawn()
-        .map_err(|error| format!("The new version wouldn't start: {error}."))?;
+        .map_err(|error| fill(tr("The new version wouldn't start: {}."), &[&error]))?;
     let started = std::time::Instant::now();
     loop {
         match child.try_wait() {
             Ok(Some(status)) if status.success() => return Ok(()),
-            Ok(Some(_)) => return Err("The new version didn't pass its start-up check.".into()),
+            Ok(Some(_)) => {
+                return Err(tr("The new version didn't pass its start-up check.").into());
+            }
             Ok(None) if started.elapsed() > std::time::Duration::from_secs(60) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Err("The new version's start-up check took too long.".into());
+                return Err(tr("The new version's start-up check took too long.").into());
             }
             Ok(None) => std::thread::sleep(std::time::Duration::from_millis(100)),
             Err(error) => return Err(error.to_string()),
@@ -351,20 +357,20 @@ async fn prepare_in(
 ) -> Result<Prepared, String> {
     let asset = target.asset();
     progress.stage(Stage::Starting);
-    let sums = sums_of(release).ok_or("This release doesn't publish SHA256SUMS.txt.")?;
+    let sums = sums_of(release).ok_or(tr("This release doesn't publish SHA256SUMS.txt."))?;
     let sums = fetch_sums(client, &sums.url).await?;
     let expected = sums.get(&asset.name).ok_or_else(|| {
-        format!(
-            "The download of {} couldn't be verified, so it wasn't installed.",
-            asset.name
+        fill(
+            tr("The download of {} couldn't be verified, so it wasn't installed."),
+            &[&asset.name],
         )
     })?;
     progress.stage(Stage::Downloading);
     let actual = download(client, &asset.url, part, asset.size, progress).await?;
     if &actual != expected {
-        return Err(format!(
-            "{} doesn't match the sum the release published.",
-            asset.name
+        return Err(fill(
+            tr("{} doesn't match the sum the release published."),
+            &[&asset.name],
         ));
     }
     match target {
@@ -469,7 +475,10 @@ pub fn run_installer(_: &Path, _: &Path, _: &[String]) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::update::Version;
-    use yapfast_core::runtime::BackgroundRuntime;
+    use yapfast_core::{
+    i18n::{fill, tr},
+    runtime::BackgroundRuntime,
+};
 
     fn asset(name: &str) -> Asset {
         Asset {

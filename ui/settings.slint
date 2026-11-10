@@ -1405,15 +1405,15 @@ export component AboutSettings inherits VerticalLayout {
     callback copy-text(string);
     property <bool> copied;
     property <string> status-text:
-        Updates.status == UpdateStatus.checking ? "Checking for updates…"
-        : Updates.status == UpdateStatus.current ? "You're up to date."
-        : Updates.status == UpdateStatus.available ? "Yapfast " + Updates.latest + " is available."
-        : Updates.status == UpdateStatus.skipped ? "You skipped " + Updates.latest + ". We'll tell you about the next one."
-        : Updates.status == UpdateStatus.failed ? "Couldn't check for updates: " + Updates.error
-        : Updates.status == UpdateStatus.source ? "You're running a build from source, so there's nothing to update."
-        : Updates.check ? "" : "Update checks are turned off.";
+        Updates.status == UpdateStatus.checking ? @tr("Checking for updates…")
+        : Updates.status == UpdateStatus.current ? @tr("You're up to date.")
+        : Updates.status == UpdateStatus.available ? @tr("Yapfast {} is available.", Updates.latest)
+        : Updates.status == UpdateStatus.skipped ? @tr("You skipped {}. We'll tell you about the next one.", Updates.latest)
+        : Updates.status == UpdateStatus.failed ? @tr("Couldn't check for updates: {}", Updates.error)
+        : Updates.status == UpdateStatus.source ? @tr("You're running a build from source, so there's nothing to update.")
+        : Updates.check ? "" : @tr("Update checks are turned off.");
     spacing: 16px;
-    SettingsTitle { text: "About"; }
+    SettingsTitle { text: @tr("About"); }
     Rectangle {
         background: Theme.sidebar; border-radius: 8px;
         HorizontalLayout {
@@ -1424,7 +1424,7 @@ export component AboutSettings inherits VerticalLayout {
                 HorizontalLayout {
                     alignment: start;
                     Text {
-                        text: BuildInfo.channel; font-size: 13px; font-weight: 700;
+                        text: BuildInfo.channel-text; font-size: 13px; font-weight: 700;
                         color: BuildInfo.tone == 0 ? Theme.live : BuildInfo.tone == 1 ? Theme.accent : Theme.danger-text;
                     }
                     if BuildInfo.details != "": Text { text: " · " + BuildInfo.details; color: Theme.muted; font-size: 13px; overflow: elide; }
@@ -1432,16 +1432,16 @@ export component AboutSettings inherits VerticalLayout {
             }
             Middle {
                 ActionButton {
-                    text: root.copied ? "Copied" : "Copy version";
+                    text: root.copied ? @tr("Copied") : @tr("Copy version");
                     clicked => { root.copy-text(BuildInfo.summary); root.copied = true; }
                 }
             }
         }
     }
     Timer { interval: 2s; running: root.copied; triggered => { root.copied = false; } }
-    SettingsHeading { text: "UPDATES"; }
+    SettingsHeading { text: @tr("UPDATES"); }
     if Updates.manager != "": Label {
-        text: "You installed Yapfast with " + Updates.manager + ", so update it there.";
+        text: @tr("You installed Yapfast with {}, so update it there.", Updates.manager);
     }
     if root.status-text != "": Label {
         text: root.status-text;
@@ -1459,18 +1459,18 @@ export component AboutSettings inherits VerticalLayout {
         }
         HorizontalLayout {
             alignment: start;
-            if Updates.can-cancel: ActionButton { text: "Cancel"; clicked => { Updates.cancel-install(); } }
+            if Updates.can-cancel: ActionButton { text: @tr("Cancel"); clicked => { Updates.cancel-install(); } }
         }
     }
     if !Updates.installing && Updates.install-error != "": Label {
-        text: "Couldn't update: " + Updates.install-error; color: Theme.danger-text;
+        text: @tr("Couldn't update: {}", Updates.install-error); color: Theme.danger-text;
     }
     if !Updates.installing && Updates.status == UpdateStatus.available && Updates.install-note != "": Label {
         text: Updates.install-note;
     }
     if Updates.notes != "" && (Updates.status == UpdateStatus.available || Updates.status == UpdateStatus.skipped): VerticalLayout {
         spacing: 8px;
-        SettingsHeading { text: "WHAT'S NEW IN " + Updates.latest.to-uppercase(); }
+        SettingsHeading { text: @tr("WHAT'S NEW IN {}", Updates.latest.to-uppercase()); }
         Rectangle {
             background: Theme.sidebar; border-radius: 8px; height: min(notes-text.preferred-height + 24px, 220px);
             ScrollView {
@@ -1485,32 +1485,32 @@ export component AboutSettings inherits VerticalLayout {
     if !Updates.installing: HorizontalLayout {
         spacing: 8px; alignment: start;
         if Updates.status == UpdateStatus.available && Updates.can-install: ActionButton {
-            text: "Update and restart"; icon: @image-url("icons/download.svg"); primary: true;
+            text: @tr("Update and restart"); icon: @image-url("icons/download.svg"); primary: true;
             clicked => { Updates.install(); }
         }
         if Updates.status == UpdateStatus.available || Updates.status == UpdateStatus.skipped: ActionButton {
-            text: "View release"; icon: @image-url("icons/external-link.svg"); primary: Updates.status == UpdateStatus.available && !Updates.can-install;
+            text: @tr("View release"); icon: @image-url("icons/external-link.svg"); primary: Updates.status == UpdateStatus.available && !Updates.can-install;
             clicked => { Updates.view(); }
         }
         if Updates.status == UpdateStatus.available: ActionButton {
-            text: "Skip this version";
+            text: @tr("Skip this version");
             clicked => { Updates.skip(); }
         }
         ActionButton {
-            text: "Check now"; icon: @image-url("icons/refresh-cw.svg"); enabled: Updates.status != UpdateStatus.checking;
+            text: @tr("Check now"); icon: @image-url("icons/refresh-cw.svg"); enabled: Updates.status != UpdateStatus.checking;
             clicked => { Updates.check-now(); }
         }
     }
     SettingsSwitch {
-        text: "Check for updates";
-        description: "Checks for new versions every 6 hours.";
+        text: @tr("Check for updates");
+        description: @tr("Checks for new versions every 6 hours.");
         new-key: "check-updates";
         checked <=> Updates.check;
         toggled => { Updates.preferences-changed(); }
     }
     SettingsSwitch {
-        text: "Include nightly builds";
-        description: "Get the newest features before release. Expect some bugs.";
+        text: @tr("Include nightly builds");
+        description: @tr("Get the newest features before release. Expect some bugs.");
         new-key: "update-nightlies";
         checked <=> Updates.nightlies;
         enabled: Updates.check;
@@ -1519,15 +1519,15 @@ export component AboutSettings inherits VerticalLayout {
     // Not available: the project decides whether Yapfast may update without
     // being asked, and until it does, nothing turns this on.
     SettingsSwitch {
-        text: "Install updates automatically";
-        description: "Not available yet.";
+        text: @tr("Install updates automatically");
+        description: @tr("Not available yet.");
         checked: false;
         enabled: false;
     }
-    SettingsHeading { text: "LINKS"; }
+    SettingsHeading { text: @tr("LINKS"); }
     HorizontalLayout {
         spacing: 8px; alignment: start;
-        ActionButton { text: "Website"; icon: @image-url("icons/logo.svg"); clicked => { Updates.open-website(); } }
+        ActionButton { text: @tr("Website"); icon: @image-url("icons/logo.svg"); clicked => { Updates.open-website(); } }
         ActionButton { text: "GitHub"; icon: @image-url("icons/github.svg"); clicked => { Updates.open-github(); } }
         ActionButton { text: "Discord"; icon: @image-url("icons/discord.svg"); clicked => { Updates.open-discord(); } }
     }

@@ -52,7 +52,7 @@ export component AccountFlyout inherits Rectangle {
     background: Theme.panel; border-radius: 8px;
     border-width: 1px; border-color: Theme.line;
     drop-shadow-blur: 24px; drop-shadow-color: #00000080; drop-shadow-offset-y: 8px;
-    accessible-role: groupbox; accessible-label: "Switch Accounts";
+    accessible-role: groupbox; accessible-label: @tr("Switch Accounts");
     content := VerticalLayout {
         padding: 8px; spacing: 0px;
         for account in root.accounts: AccountChoice {
@@ -64,10 +64,10 @@ export component AccountFlyout inherits Rectangle {
             height: 40px; border-radius: 4px;
             background: manage-touch.has-hover ? Theme.active : transparent;
             border-width: manage-focus.has-focus ? 2px : 0px; border-color: Theme.accent;
-            accessible-role: button; accessible-label: "Manage Accounts";
+            accessible-role: button; accessible-label: @tr("Manage Accounts");
             accessible-action-default => { root.manage(); }
             forward-focus: manage-focus;
-            Text { x: 8px; width: parent.width - 16px; text: "Manage Accounts"; color: Theme.text; font-size: 14px; font-weight: 700; vertical-alignment: center; overflow: elide; }
+            Text { x: 8px; width: parent.width - 16px; text: @tr("Manage Accounts"); color: Theme.text; font-size: 14px; font-weight: 700; vertical-alignment: center; overflow: elide; }
             manage-focus := FocusScope {
                 key-pressed(event) => {
                     if event.text == " " || event.text == "\n" { root.manage(); return accept; }
@@ -88,18 +88,18 @@ component ManagedAccount inherits Rectangle {
     callback more(length);
     height: 64px; border-radius: 8px; background: Theme.active;
     accessible-role: groupbox; accessible-label: root.account.name;
-    accessible-description: root.account.active ? "Active Account" : "";
+    accessible-description: root.account.active ? @tr("Active Account") : "";
     HorizontalLayout {
         padding-left: 16px; padding-right: 12px; spacing: 8px;
         Middle { Avatar { size: 40px; initial: root.account.initial; tint: root.account.tint; picture-url: root.account.picture-url; } }
         VerticalLayout {
             alignment: center; horizontal-stretch: 1; spacing: 0px;
             Text { text: root.account.name; color: Theme.text; font-size: 16px; font-weight: 700; overflow: elide; }
-            if root.account.active: Text { text: "Active Account"; color: Theme.live; font-size: 13px; font-weight: 600; }
+            if root.account.active: Text { text: @tr("Active Account"); color: Theme.live; font-size: 13px; font-weight: 600; }
         }
         Middle {
             IconButton {
-                icon: @image-url("../icons/ellipsis.svg"); label: "More options for " + root.account.name; size: 32px; glyph: 20px;
+                icon: @image-url("../icons/ellipsis.svg"); label: @tr("More options for {}", root.account.name); size: 32px; glyph: 20px;
                 clicked => { root.more(root.absolute-position.y + root.height); }
             }
         }
@@ -147,7 +147,7 @@ export component ManageAccountsDialog inherits Rectangle {
         background: Theme.raised; border-color: Theme.edge; border-width: 1px; border-radius: 12px;
         drop-shadow-blur: 32px; drop-shadow-color: #00000066; drop-shadow-offset-y: 12px;
         accessible-role: groupbox;
-        accessible-label: root.linking ? "Add Account" : "Manage Accounts";
+        accessible-label: root.linking ? @tr("Add Account") : @tr("Manage Accounts");
         TouchArea { clicked => { if root.menu-id != "" { root.open-menu(""); } } }
         scope := FocusScope {
             key-pressed(event) => {
@@ -165,13 +165,13 @@ export component ManageAccountsDialog inherits Rectangle {
                     spacing: 8px; padding-bottom: 5px;
                     HorizontalLayout {
                         Text {
-                            text: root.linking ? "Add Account" : "Manage Accounts"; color: Theme.text;
+                            text: root.linking ? @tr("Add Account") : @tr("Manage Accounts"); color: Theme.text;
                             font-size: 20px; font-weight: 700; vertical-alignment: center; horizontal-stretch: 1;
                         }
-                        IconButton { icon: @image-url("../icons/x.svg"); label: "Close"; size: 28px; glyph: 18px; clicked => { root.close(); } }
+                        IconButton { icon: @image-url("../icons/x.svg"); label: @tr("Close"); size: 28px; glyph: 18px; clicked => { root.close(); } }
                     }
                     Label {
-                        text: root.linking ? "Link another Discord account to switch between them." : "Switch between different accounts - log in, log out, do whatever you want";
+                        text: root.linking ? @tr("Link another Discord account to switch between them.") : @tr("Switch between different accounts - log in, log out, do whatever you want");
                         color: Theme.secondary; font-size: 15px;
                     }
                 }
@@ -186,12 +186,12 @@ export component ManageAccountsDialog inherits Rectangle {
                     height: 40px; border-radius: 8px;
                     background: !root.can-add ? Theme.active.with-alpha(0.5) : add-touch.has-hover ? Theme.button-default-hover : Theme.active;
                     border-width: add-focus.has-focus ? 2px : 0px; border-color: Theme.accent;
-                    accessible-role: button; accessible-label: "Add Account";
-                    accessible-description: root.can-add ? "" : "You can link up to 5 accounts. Log one out to add another.";
+                    accessible-role: button; accessible-label: @tr("Add Account");
+                    accessible-description: root.can-add ? "" : @tr("You can link up to 5 accounts. Log one out to add another.");
                     accessible-enabled: root.can-add;
                     accessible-action-default => { if root.can-add { root.adding = true; } }
                     forward-focus: add-focus;
-                    Text { text: "Add Account"; color: root.can-add ? Theme.text : Theme.muted; font-size: 15px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                    Text { text: @tr("Add Account"); color: root.can-add ? Theme.text : Theme.muted; font-size: 15px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
                     add-focus := FocusScope {
                         key-pressed(event) => {
                             if root.can-add && (event.text == " " || event.text == "\n") { root.adding = true; return accept; }
@@ -203,7 +203,7 @@ export component ManageAccountsDialog inherits Rectangle {
                         }
                     }
                 }
-                if !root.can-add && !root.linking: Label { text: "You can link up to 5 accounts. Log one out to add another."; }
+                if !root.can-add && !root.linking: Label { text: @tr("You can link up to 5 accounts. Log one out to add another."); }
                 if root.linking: DiscordLinkPanel {
                     phase: root.link-phase; code: root.link-code; name: root.link-name; note: root.link-note;
                     begin => { root.link-discord(); }
@@ -212,7 +212,7 @@ export component ManageAccountsDialog inherits Rectangle {
                 }
                 if root.linking: HorizontalLayout {
                     alignment: start;
-                    ActionButton { text: "Back"; clicked => { root.back(); } }
+                    ActionButton { text: @tr("Back"); clicked => { root.back(); } }
                 }
             }
         }
@@ -222,18 +222,18 @@ export component ManageAccountsDialog inherits Rectangle {
             width: 200px; height: menu-card.preferred-height;
             background: Theme.menu; border-radius: 8px; border-width: 1px; border-color: Theme.menu-line;
             drop-shadow-blur: 24px; drop-shadow-color: #00000080; drop-shadow-offset-y: 8px;
-            accessible-role: groupbox; accessible-label: "Account menu";
+            accessible-role: groupbox; accessible-label: @tr("Account menu");
             TouchArea { }
             menu-card := VerticalLayout {
                 padding: 8px; spacing: 2px;
                 for account in root.accounts: VerticalLayout {
                     spacing: 2px;
                     if account.id == root.menu-id && !account.active: MenuItem {
-                        text: "Switch Account"; icon: @image-url("../icons/refresh-cw.svg");
+                        text: @tr("Switch Account"); icon: @image-url("../icons/refresh-cw.svg");
                         clicked => { root.choose(account.id); }
                     }
                     if account.id == root.menu-id: MenuItem {
-                        text: "Log Out"; icon: @image-url("../icons/log-out.svg"); danger: true;
+                        text: @tr("Log Out"); icon: @image-url("../icons/log-out.svg"); danger: true;
                         clicked => { root.log-out(account.id); }
                     }
                 }

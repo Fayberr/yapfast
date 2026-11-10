@@ -366,6 +366,10 @@ msgstr ""
 msgid "A sound that's gone"
 msgstr ""
 
+#: ui/settings.slint ui/yapfast/settings-nav.slint
+msgid "About"
+msgstr ""
+
 #: ui/server.slint
 msgid "ABOUT ME"
 msgstr ""
@@ -398,8 +402,16 @@ msgstr ""
 msgid "Account"
 msgstr ""
 
+#: ui/yapfast/accounts.slint
+msgid "Account menu"
+msgstr ""
+
 #: ui/server_ownership.slint
 msgid "Acknowledge the transfer"
+msgstr ""
+
+#: ui/yapfast/accounts.slint
+msgid "Active Account"
 msgstr ""
 
 #: ui/server_people.slint
@@ -436,6 +448,10 @@ msgstr ""
 
 #: ui/channel_settings.slint
 msgid "Add a role or member"
+msgstr ""
+
+#: ui/yapfast/accounts.slint
+msgid "Add Account"
 msgstr ""
 
 #: ui/yapfast.slint
@@ -754,7 +770,7 @@ msgstr ""
 msgid "Average ping:"
 msgstr ""
 
-#: ui/gifs.slint ui/roles.slint ui/yapfast/window-bar.slint
+#: ui/gifs.slint ui/roles.slint ui/yapfast/accounts.slint ui/yapfast/window-bar.slint
 msgid "Back"
 msgstr ""
 
@@ -1022,12 +1038,32 @@ msgstr ""
 msgid "Check again"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Check for updates"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Check now"
+msgstr ""
+
 #: ui/server_ownership.slint
 msgid "Check your email: we sent you a verification code. Enter it here to verify you’re really you."
 msgstr ""
 
+#: ui/settings.slint
+msgid "Checking for updates…"
+msgstr ""
+
 #: ui/discord.slint
 msgid "Checking the token..."
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Checking the update…"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Checks for new versions every 6 hours."
 msgstr ""
 
 #: ui/messages.slint ui/settings.slint
@@ -1122,6 +1158,10 @@ msgstr ""
 msgid "Click to copy"
 msgstr ""
 
+#: src/ui/updates.rs
+msgid "Click to see what's new."
+msgstr ""
+
 #: ui/settings.slint
 msgid "CLOCK"
 msgstr ""
@@ -1130,7 +1170,7 @@ msgstr ""
 msgid "Clock"
 msgstr ""
 
-#: ui/dialogs.slint ui/forum.slint ui/friends.slint ui/header.slint ui/interactions.slint ui/messages.slint ui/server.slint ui/thread.slint ui/title_bar.slint ui/yapfast/window-bar.slint
+#: ui/dialogs.slint ui/forum.slint ui/friends.slint ui/header.slint ui/interactions.slint ui/messages.slint ui/server.slint ui/thread.slint ui/title_bar.slint ui/yapfast/accounts.slint ui/yapfast/window-bar.slint
 msgid "Close"
 msgstr ""
 
@@ -1238,7 +1278,7 @@ msgstr ""
 msgid "Context Menu"
 msgstr ""
 
-#: ui/server.slint ui/voice.slint ui/yapfast/build-info.slint
+#: ui/server.slint ui/settings.slint ui/voice.slint ui/yapfast/build-info.slint
 msgid "Copied"
 msgstr ""
 
@@ -1278,8 +1318,24 @@ msgstr ""
 msgid "Copy User ID"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Copy version"
+msgstr ""
+
 #: src/ui.rs
 msgid "Could not list audio devices."
+msgstr ""
+
+#: crates/yapfast-core/src/chat.rs
+msgid "Could not log out of that Discord account."
+msgstr ""
+
+#: crates/yapfast-core/src/chat.rs
+msgid "Could not switch to that Discord account."
+msgstr ""
+
+#: ui/settings.slint
+msgid "Couldn't check for updates: {}"
 msgstr ""
 
 #: src/ui/refresh.rs
@@ -1292,6 +1348,14 @@ msgstr ""
 
 #: ui/messages.slint
 msgid "Couldn't load {} messages. Retry"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Couldn't restart. Please reopen Yapfast."
+msgstr ""
+
+#: ui/settings.slint
+msgid "Couldn't update: {}"
 msgstr ""
 
 #: ui/header.slint
@@ -1522,6 +1586,10 @@ msgstr ""
 msgid "Developer Mode"
 msgstr ""
 
+#: ui/yapfast/build-info.slint
+msgid "Development build"
+msgstr ""
+
 #: ui/server_ownership.slint
 msgid "Didn’t receive a code or it expired? Resend it."
 msgstr ""
@@ -1656,6 +1724,14 @@ msgstr ""
 
 #: ui/moderation.slint ui/server.slint
 msgid "Done"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Downloading"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Downloading {}%"
 msgstr ""
 
 #: ui/settings.slint
@@ -2190,6 +2266,10 @@ msgstr ""
 msgid "Generate a new link"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Get the newest features before release. Expect some bugs."
+msgstr ""
+
 #: ui/server_expressions.slint
 msgid "Get the party started by uploading an emoji"
 msgstr ""
@@ -2390,6 +2470,10 @@ msgstr ""
 msgid "Inbox"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Include nightly builds"
+msgstr ""
+
 #: src/ui.rs
 msgid "Incoming call"
 msgstr ""
@@ -2432,6 +2516,10 @@ msgstr ""
 
 #: ui/messages.slint
 msgid "Insert"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Install updates automatically"
 msgstr ""
 
 #: ui/dialogs.slint ui/yapfast/account-popover.slint
@@ -2722,6 +2810,10 @@ msgstr ""
 msgid "Link a Discord account first."
 msgstr ""
 
+#: ui/yapfast/accounts.slint
+msgid "Link another Discord account to switch between them."
+msgstr ""
+
 #: ui/settings.slint
 msgid "Link your Discord account to see its servers and DMs in Yapfast, and join its calls. The login stays on this computer, in the system's credential store."
 msgstr ""
@@ -2736,6 +2828,10 @@ msgstr ""
 
 #: ui/discord.slint
 msgid "Linking {}. Tap Log in on your phone to finish."
+msgstr ""
+
+#: ui/settings.slint
+msgid "LINKS"
 msgstr ""
 
 #: ui/voice.slint
@@ -2818,6 +2914,10 @@ msgstr ""
 msgid "Locked, Nitro only: {}"
 msgstr ""
 
+#: ui/yapfast/accounts.slint
+msgid "Log Out"
+msgstr ""
+
 #: ui/settings.slint
 msgid "Long messages and code show their first lines, with Show more to see the rest."
 msgstr ""
@@ -2856,6 +2956,10 @@ msgstr ""
 
 #: ui/server.slint
 msgid "Making a link..."
+msgstr ""
+
+#: ui/yapfast/accounts.slint
+msgid "Manage Accounts"
 msgstr ""
 
 #: src/ui/server_settings.rs
@@ -3098,6 +3202,10 @@ msgstr ""
 msgid "More options"
 msgstr ""
 
+#: ui/yapfast/accounts.slint
+msgid "More options for {}"
+msgstr ""
+
 #: src/ui/profile.rs
 msgid "Most played: {}h"
 msgstr ""
@@ -3210,11 +3318,11 @@ msgstr ""
 msgid "never expires"
 msgstr ""
 
-#: ui/forum.slint
+#: ui/forum.slint ui/yapfast/new-tags.slint
 msgid "NEW"
 msgstr ""
 
-#: ui/friends.slint ui/yapfast.slint
+#: ui/friends.slint ui/yapfast/new-tags.slint ui/yapfast.slint
 msgid "New"
 msgstr ""
 
@@ -3264,6 +3372,10 @@ msgstr ""
 
 #: src/ui/refresh.rs
 msgid "Nickname for {}"
+msgstr ""
+
+#: ui/yapfast/build-info.slint
+msgid "Nightly"
 msgstr ""
 
 #: ui/server_people.slint
@@ -3496,6 +3608,10 @@ msgstr ""
 
 #: ui/roles.slint
 msgid "Not all members are shown, use Search to find specific members"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Not available yet."
 msgstr ""
 
 #: ui/controls.slint
@@ -3970,6 +4086,14 @@ msgstr ""
 msgid "Posts"
 msgstr ""
 
+#: ui/yapfast/build-info.slint
+msgid "Pre-release"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Preparing…"
+msgstr ""
+
 #: ui/settings.slint
 msgid "Press a key..."
 msgstr ""
@@ -4296,6 +4420,10 @@ msgstr ""
 
 #: ui/settings.slint
 msgid "Restart Yapfast"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "Restarting…"
 msgstr ""
 
 #: ui/title_bar.slint ui/yapfast/window-bar.slint
@@ -4878,6 +5006,10 @@ msgstr ""
 msgid "SIGNALS"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Skip this version"
+msgstr ""
+
 #: ui/mfa.slint
 msgid "Slow down! Are you sure?"
 msgstr ""
@@ -5004,6 +5136,10 @@ msgstr ""
 
 #: ui/header.slint ui/messages.slint
 msgid "Spoiler"
+msgstr ""
+
+#: ui/yapfast/build-info.slint
+msgid "Stable"
 msgstr ""
 
 #: ui/dialogs.slint
@@ -5162,6 +5298,18 @@ msgstr ""
 msgid "Switch"
 msgstr ""
 
+#: ui/yapfast/accounts.slint
+msgid "Switch Account"
+msgstr ""
+
+#: ui/yapfast/account-popover.slint ui/yapfast/accounts.slint
+msgid "Switch Accounts"
+msgstr ""
+
+#: ui/yapfast/accounts.slint
+msgid "Switch between different accounts - log in, log out, do whatever you want"
+msgstr ""
+
 #: ui/voice.slint
 msgid "Switch channel"
 msgstr ""
@@ -5274,12 +5422,28 @@ msgstr ""
 msgid "The animations some people put over their profile cards."
 msgstr ""
 
+#: src/update/install.rs
+msgid "The AppImage has no folder."
+msgstr ""
+
+#: src/update/install.rs
+msgid "The AppImage's own path isn't known."
+msgstr ""
+
 #: ui/voice.slint
 msgid "The bitrate follows what Discord estimates your connection carries. Fast motion at a low bitrate looks blocky to viewers."
 msgstr ""
 
 #: src/ui/refresh.rs
 msgid "The call stays connected while you browse other conversations."
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "The check stopped partway."
+msgstr ""
+
+#: src/update/install.rs
+msgid "The download of {} couldn't be verified, so it wasn't installed."
 msgstr ""
 
 #: ui/settings.slint
@@ -5314,6 +5478,18 @@ msgstr ""
 msgid "The message you added will not be sent to slowmode channels: {}."
 msgstr ""
 
+#: src/update/install.rs
+msgid "The new version didn't pass its start-up check."
+msgstr ""
+
+#: src/update/install.rs
+msgid "The new version wouldn't start: {}."
+msgstr ""
+
+#: src/update/install.rs
+msgid "The new version's start-up check took too long."
+msgstr ""
+
 #: src/ui/refresh.rs
 msgid "the other channel"
 msgstr ""
@@ -5334,8 +5510,20 @@ msgstr ""
 msgid "The recommended minimum size is 960x540 and recommended aspect ratio is 16:9."
 msgstr ""
 
+#: src/update/install.rs
+msgid "The release's sums are too large to be right."
+msgstr ""
+
 #: ui/settings.slint
 msgid "The tag and its badge beside people's names."
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "The update couldn't start."
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "The update stopped partway."
 msgstr ""
 
 #: ui/people.slint
@@ -5376,6 +5564,18 @@ msgstr ""
 
 #: ui/header.slint
 msgid "There are no threads."
+msgstr ""
+
+#: src/update/install.rs
+msgid "There's no AppImage for this version yet."
+msgstr ""
+
+#: src/update/install.rs
+msgid "There's no download for your system yet."
+msgstr ""
+
+#: src/update/install.rs
+msgid "There's no Windows installer for this version yet."
 msgstr ""
 
 #: src/ui/refresh.rs
@@ -5488,6 +5688,10 @@ msgstr ""
 
 #: ui/server_settings.slint
 msgid "This progress bar will display in your channel list, attached to your server name (or server banner if you have one set)."
+msgstr ""
+
+#: src/update/install.rs
+msgid "This release doesn't publish SHA256SUMS.txt."
 msgstr ""
 
 #: src/ui/server_settings.rs
@@ -5750,6 +5954,26 @@ msgstr ""
 msgid "Update"
 msgstr ""
 
+#: ui/settings.slint
+msgid "Update and restart"
+msgstr ""
+
+#: ui/yapfast/build-info.slint
+msgid "Update available · {}"
+msgstr ""
+
+#: ui/yapfast/build-info.slint
+msgid "Update available: {}"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Update checks are turned off."
+msgstr ""
+
+#: ui/settings.slint
+msgid "UPDATES"
+msgstr ""
+
 #: ui/server.slint
 msgid "Upgrade Nitro"
 msgstr ""
@@ -5962,6 +6186,10 @@ msgstr ""
 msgid "View Reactions"
 msgstr ""
 
+#: ui/settings.slint
+msgid "View release"
+msgstr ""
+
 #: ui/messages.slint
 msgid "View Thread"
 msgstr ""
@@ -6074,6 +6302,10 @@ msgstr ""
 msgid "We searched far and wide. Unfortunately, no results were found."
 msgstr ""
 
+#: ui/settings.slint
+msgid "Website"
+msgstr ""
+
 #: src/ui/refresh.rs
 msgid "Welcome to"
 msgstr ""
@@ -6092,6 +6324,10 @@ msgstr ""
 
 #: ui/dialogs.slint
 msgid "What's happening?"
+msgstr ""
+
+#: ui/settings.slint
+msgid "WHAT'S NEW IN {}"
 msgstr ""
 
 #: ui/dialogs.slint
@@ -6134,6 +6370,18 @@ msgstr ""
 msgid "Yapfast can't show this part of the message yet."
 msgstr ""
 
+#: src/update/install.rs
+msgid "Yapfast can't write to its own folder."
+msgstr ""
+
+#: src/update/install.rs
+msgid "Yapfast can't write to the AppImage's folder."
+msgstr ""
+
+#: src/update/install.rs
+msgid "Yapfast has no folder."
+msgstr ""
+
 #: src/ui/refresh.rs
 msgid "Yapfast hasn't seen anyone with this role yet."
 msgstr ""
@@ -6170,6 +6418,14 @@ msgstr ""
 msgid "Yapfast switches to {} when it restarts. Restarting leaves any call."
 msgstr ""
 
+#: src/ui/updates.rs
+msgid "Yapfast {} is available"
+msgstr ""
+
+#: ui/settings.slint
+msgid "Yapfast {} is available."
+msgstr ""
+
 #: ui/settings.slint
 msgid "Year-Month-Day"
 msgstr ""
@@ -6184,6 +6440,10 @@ msgstr ""
 
 #: ui/header.slint
 msgid "You can add {0} more {1}"
+msgstr ""
+
+#: ui/yapfast/accounts.slint
+msgid "You can link up to 5 accounts. Log one out to add another."
 msgstr ""
 
 #: ui/server.slint
@@ -6226,6 +6486,10 @@ msgstr ""
 msgid "You haven't banned anybody...\nbut if and when you must, do not hesitate!"
 msgstr ""
 
+#: ui/settings.slint
+msgid "You installed Yapfast with {}, so update it there."
+msgstr ""
+
 #: ui/voice.slint
 msgid "You may notice delayed audio at 250 ms or higher. If the problem persists, disconnect and try again.{}"
 msgstr ""
@@ -6236,6 +6500,10 @@ msgstr ""
 
 #: ui/friends.slint
 msgid "You sent a friend request"
+msgstr ""
+
+#: ui/settings.slint
+msgid "You skipped {}. We'll tell you about the next one."
 msgstr ""
 
 #: ui/messages.slint
@@ -6278,8 +6546,16 @@ msgstr ""
 msgid "You're interested in this event."
 msgstr ""
 
+#: ui/settings.slint
+msgid "You're running a build from source, so there's nothing to update."
+msgstr ""
+
 #: src/ui/refresh.rs
 msgid "You're timed out in this server until {}."
+msgstr ""
+
+#: ui/settings.slint
+msgid "You're up to date."
 msgstr ""
 
 #: ui/messages.slint
@@ -6570,6 +6846,10 @@ msgstr ""
 msgid "{} Device"
 msgstr ""
 
+#: src/update/install.rs
+msgid "{} doesn't match the sum the release published."
+msgstr ""
+
 #: ui/people.slint
 msgid "{} elapsed"
 msgstr ""
@@ -6600,6 +6880,10 @@ msgstr ""
 
 #: ui/people.slint ui/server.slint ui/server_settings.slint
 msgid "{} left"
+msgstr ""
+
+#: src/ui/updates.rs
+msgid "{} MB. Yapfast restarts when it's done."
 msgstr ""
 
 #: src/ui/refresh.rs src/ui.rs
@@ -6668,6 +6952,10 @@ msgstr ""
 
 #: src/ui/profile.rs
 msgid "{} tracks this week"
+msgstr ""
+
+#: src/update/install.rs
+msgid "{} updates this copy."
 msgstr ""
 
 #: ui/controls.slint

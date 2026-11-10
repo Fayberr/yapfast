@@ -13,6 +13,11 @@ export global BuildInfo {
     in property <int> tone;
     /// Everything on one line, which a click copies for a bug report.
     in property <string> summary;
+    /// `channel` in the interface's language.
+    out property <string> channel-text: channel == "Stable" ? @tr("Stable")
+        : channel == "Nightly" ? @tr("Nightly")
+        : channel == "Pre-release" ? @tr("Pre-release")
+        : channel == "Development build" ? @tr("Development build") : channel;
 }
 
 export enum UpdateStatus {
@@ -75,7 +80,7 @@ export component UpdateNotice inherits Rectangle {
     height: Updates.status == UpdateStatus.available ? 36px : 0px;
     clip: true;
     accessible-role: button;
-    accessible-label: "Update available: " + Updates.latest;
+    accessible-label: @tr("Update available: {}", Updates.latest);
     accessible-action-default => { root.clicked(); }
     forward-focus: notice-focus;
     Rectangle {
@@ -84,7 +89,7 @@ export component UpdateNotice inherits Rectangle {
         border-width: notice-focus.has-focus ? 2px : 0px; border-color: Theme.accent;
         Text {
             x: 12px; width: parent.width - 24px; vertical-alignment: center;
-            text: "Update available · " + Updates.latest; color: Theme.accent; font-size: 13px; font-weight: 700; overflow: elide;
+            text: @tr("Update available · {}", Updates.latest); color: Theme.accent; font-size: 13px; font-weight: 700; overflow: elide;
         }
     }
     notice-focus := FocusScope {
@@ -128,7 +133,7 @@ export component BuildStamp inherits Rectangle {
             HorizontalLayout {
                 alignment: start;
                 Text {
-                    text: root.copied ? @tr("Copied") : BuildInfo.channel;
+                    text: root.copied ? @tr("Copied") : BuildInfo.channel-text;
                     color: root.copied ? Theme.text : root.tint; font-size: 12px; font-weight: 700;
                 }
                 if !root.copied && BuildInfo.details != "": Text {
