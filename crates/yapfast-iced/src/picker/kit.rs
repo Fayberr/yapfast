@@ -124,23 +124,27 @@ pub fn tabs<'a>(theme: &Theme, chosen: Tab) -> Element<'a, Message> {
         let on = tab == chosen;
         let (rest, lit) = (theme.secondary, theme.text);
         let (active, hover) = (theme.active, theme.hover);
-        button(text(label).size(14).font(SEMIBOLD))
-            .padding([0, 12])
-            .height(30)
-            .on_press(Message::Picker(Event::Tab(tab)))
-            .style(move |_, status| {
-                let lights = crate::controls::lights(status);
-                button::Style {
-                    background: if on {
-                        Some(active.into())
-                    } else {
-                        lights.then(|| hover.into())
-                    },
-                    text_color: if on || lights { lit } else { rest },
-                    border: crate::style::round(6),
-                    ..Default::default()
-                }
-            })
+        button(
+            text(label)
+                .size(theme.type_size("labels", 14.0))
+                .font(theme.font("labels", SEMIBOLD)),
+        )
+        .padding([0, 12])
+        .height(30)
+        .on_press(Message::Picker(Event::Tab(tab)))
+        .style(move |_, status| {
+            let lights = crate::controls::lights(status);
+            button::Style {
+                background: if on {
+                    Some(active.into())
+                } else {
+                    lights.then(|| hover.into())
+                },
+                text_color: if on || lights { lit } else { rest },
+                border: crate::style::round(6),
+                ..Default::default()
+            }
+        })
     };
     container(
         row![

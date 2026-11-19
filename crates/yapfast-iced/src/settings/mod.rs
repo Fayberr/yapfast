@@ -20,7 +20,7 @@ mod appearance;
 pub mod keybinds;
 mod pages;
 pub(crate) mod theme_creator;
-mod theme_marketplace;
+pub(crate) mod theme_marketplace;
 pub mod updates;
 
 pub use pages::message_size;

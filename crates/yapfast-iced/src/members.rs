@@ -1054,23 +1054,82 @@ impl<'a> View<'a> {
             .and_then(|title| title.colour)
             .map(crate::themes::argb)
             .unwrap_or(theme.muted);
-        let line = text(words)
-            .size(size)
-            .font(theme.font(role, MEDIUM))
-            .color(ink)
-            .wrapping(text::Wrapping::None);
+        let shadow_light = crate::themes::offset_shadow(listed.and_then(|title| title.shadow));
+        let line: Element<'a, Message> = if let Some((base, count_part)) =
+            words.split_once(" \u{00b7} ")
+            && listed.is_some_and(|t| {
+                t.count_font.is_some() || t.count_size.is_some() || t.count_colour.is_some()
+            }) {
+            let t = listed.unwrap();
+            let count_role = t
+                .count_font
+                .map_or(role, yapfast_core::themes::lists::FontRole::name);
+            let count_size = t.count_size.unwrap_or(size);
+            let count_ink = t.count_colour.map(crate::themes::argb).unwrap_or(ink);
+            row![
+                crate::elide::elide(base.to_owned())
+                    .size(size)
+                    .font(theme.font(role, MEDIUM))
+                    .color(ink)
+                    .light(shadow_light)
+                    .shrink(),
+                crate::elide::elide(format!(" \u{00b7} {count_part}"))
+                    .size(count_size)
+                    .font(theme.font(count_role, MEDIUM))
+                    .color(count_ink)
+                    .light(shadow_light)
+                    .shrink(),
+            ]
+            .align_y(Alignment::Center)
+            .into()
+        } else {
+            crate::elide::elide(words)
+                .size(size)
+                .font(theme.font(role, MEDIUM))
+                .color(ink)
+                .light(shadow_light)
+                .shrink()
+                .into()
+        };
+        let has_rule = listed.and_then(|t| t.rule).is_some();
+        let height = if has_rule { 44.0 } else { 32.0 };
         let mut title = container(line)
             .padding(Padding {
                 left: 16.0,
                 right: 8.0,
                 ..Padding::ZERO
             })
-            .height(32)
+            .height(if has_rule { 34.0 } else { 32.0 })
             .align_y(Alignment::End);
         if listed.is_some_and(|title| title.centre) {
-            title = title.align_x(Alignment::Center);
+            title = title.width(Length::Fill).align_x(Alignment::Center);
         }
-        Some(title.into())
+        if let Some((rule_colour, dotted)) = listed.and_then(|t| t.rule) {
+            let colour = crate::themes::argb(rule_colour);
+            let rule_el: Element<'a, Message> = if dotted {
+                let mut dots = row![].spacing(2);
+                for _ in 0..48 {
+                    dots = dots.push(
+                        container(Space::new())
+                            .width(2)
+                            .height(2)
+                            .style(move |_| fill(colour)),
+                    );
+                }
+                container(dots)
+                    .padding([0, 12])
+                    .width(Length::Fill)
+                    .clip(true)
+                    .into()
+            } else {
+                container(bar(colour, Length::Fill, 2.0))
+                    .padding([0, 12])
+                    .into()
+            };
+            Some(column![title, rule_el].spacing(4).height(height).into())
+        } else {
+            Some(title.into())
+        }
     }
 
     /// Owner-theme stickers or blinkies fixed at the member list's foot,
@@ -1102,9 +1161,19 @@ impl<'a> View<'a> {
             Face::new(look.avatar.as_deref(), &look.name, avatar)
                 .opacity(if offline { 0.4 } else { 1.0 })
                 .decoration(look.decoration.as_deref(), pointed)
-                .frame(frame),
+                .frame(frame)
+                .illuminated_member(pointed),
         );
-        let stock = look.color.map_or(theme.text, hex);
+        let stock = look.color.map_or_else(
+            || {
+                if selected {
+                    theme.token_colour("row-selected-text", theme.text)
+                } else {
+                    theme.text
+                }
+            },
+            hex,
+        );
         let ink = rows
             .and_then(|rows| rows.name_ink)
             .map(crate::themes::argb)
@@ -1116,12 +1185,15 @@ impl<'a> View<'a> {
         let weight = rows.and_then(|rows| rows.weight).unwrap_or(600.0).round() as u16;
         let styled_font = look.style.as_ref().and_then(looks::NameLook::font);
         let shown = crate::fonts::shown_name(&name, styled_font).into_owned();
+        let name_role = rows
+            .and_then(|rows| rows.font)
+            .map_or("names", yapfast_core::themes::lists::FontRole::name);
         let glow_label = |colour| {
             let stock = crate::fonts::style_font(styled_font, weight);
             let font = if styled_font.is_some() {
                 stock
             } else {
-                theme.font("names", stock)
+                theme.font(name_role, stock)
             };
             container(
                 text(shown.clone())
@@ -1145,6 +1217,7 @@ impl<'a> View<'a> {
         let main_name = self.cx.person_name(
             name.into_owned(),
             NameInk::new(size, weight, faded(ink, if offline { 0.5 } else { 1.0 }))
+                .font_role(name_role)
                 .style(look.style.as_ref())
                 .key(&look.id),
         );
@@ -1270,17 +1343,35 @@ impl<'a> View<'a> {
         if let Some(icon) = icon.and_then(|icon| self.cx.picture(icon, 20, 20, false)) {
             line = line.push(Pic::square(icon, 20.0));
         }
+        let header_role = headers
+            .and_then(|h| h.font)
+            .map_or("labels", yapfast_core::themes::lists::FontRole::name);
         let size = headers
             .and_then(|headers| headers.size)
-            .unwrap_or_else(|| theme.type_size("labels", 14.0));
-        line = line.push(crate::theme_effects::label(
+            .unwrap_or_else(|| theme.type_size(header_role, 14.0));
+        let header_font = crate::themes::list_font(
+            theme,
+            headers.and_then(|h| h.font),
+            "labels",
+            headers.and_then(|h| h.weight),
+            MEDIUM,
+        );
+        let header_shadow = crate::themes::offset_shadow(headers.and_then(|h| h.shadow));
+        let mut light = crate::theme_effects::text_light(
             self.cx,
             yapfast_core::themes::package::art::TextRole::Labels,
-            heading,
-            size,
-            theme.font("labels", MEDIUM),
-            ink,
-        ));
+        );
+        if header_shadow.shadow.is_some() {
+            light.shadow = header_shadow.shadow;
+        }
+        line = line.push(
+            crate::elide::elide(heading)
+                .size(size)
+                .font(header_font)
+                .color(ink)
+                .light(light)
+                .shrink(),
+        );
         let border = theme.surface_border("label", 0.0, 0.0, Color::TRANSPARENT);
         let shadow = theme.surface_shadow("label", iced::Shadow::default());
         let surface = yapfast_core::themes::package::art::ArtSurface::Label;
@@ -1291,12 +1382,15 @@ impl<'a> View<'a> {
         let height = headers
             .and_then(|headers| headers.height)
             .unwrap_or_else(|| row_height(self.cx.look.theme));
-        let body: Element<'a, Message> = container(line)
+        let fill_width = headers.is_some_and(|h| h.fill);
+        let mut body = container(line)
             .padding(Padding {
-                top: 20.0,
-                right: 0.0,
+                top: if fill_width { 4.0 } else { 20.0 },
+                right: if fill_width { 6.0 } else { 0.0 },
                 bottom: 4.0,
-                left: headers.and_then(|headers| headers.inset).unwrap_or(8.0),
+                left: headers
+                    .and_then(|headers| headers.inset)
+                    .unwrap_or(if fill_width { 6.0 } else { 8.0 }),
             })
             .height(height)
             .align_y(Alignment::Center)
@@ -1305,8 +1399,11 @@ impl<'a> View<'a> {
                 border,
                 shadow,
                 ..Default::default()
-            })
-            .into();
+            });
+        if fill_width {
+            body = body.width(Length::Fill);
+        }
+        let body: Element<'a, Message> = body.into();
         let body = match headers.and_then(|headers| headers.frame.as_ref()) {
             Some(frame) => match crate::theme_art::tile_art(
                 self.cx,
@@ -1396,8 +1493,21 @@ impl<'a> View<'a> {
             )
             .dot_size(dot_size)
             .ring(ring)
-            .frame(avatar_frame);
-        let stock_color = faded(look.color.map_or(theme.secondary, hex), opacity);
+            .frame(avatar_frame)
+            .illuminated_member(pointed);
+        let stock_color = faded(
+            look.color.map_or_else(
+                || {
+                    if selected {
+                        theme.token_colour("row-selected-text", theme.text)
+                    } else {
+                        theme.secondary
+                    }
+                },
+                hex,
+            ),
+            opacity,
+        );
         let color = themed
             .and_then(|rows| rows.name_ink)
             .map(crate::themes::argb)
@@ -1408,15 +1518,19 @@ impl<'a> View<'a> {
             &look.name,
         );
         let marked = crate::themes::list_case(themed.and_then(|rows| rows.case), &marked);
+        let name_role = themed
+            .and_then(|rows| rows.font)
+            .map_or("names", yapfast_core::themes::lists::FontRole::name);
         let name = self.cx.person_name(
             marked.into_owned(),
             NameInk::new(
                 themed
                     .and_then(|rows| rows.size)
-                    .unwrap_or_else(|| theme.type_size("names", 16.0)),
+                    .unwrap_or_else(|| theme.type_size(name_role, 16.0)),
                 themed.and_then(|rows| rows.weight).unwrap_or(500.0).round() as u16,
                 color,
             )
+            .font_role(name_role)
             .style(look.style.as_ref())
             .key(&look.id),
         );
@@ -1558,13 +1672,17 @@ impl<'a> View<'a> {
                     meta,
                     &[("activity", activity), ("status", activity)],
                 );
+                let meta_role = rows
+                    .meta
+                    .font
+                    .map_or("small", yapfast_core::themes::lists::FontRole::name);
                 let mut words = text(words)
                     .size(
                         rows.meta
                             .size
-                            .unwrap_or_else(|| theme.type_size("small", 11.0)),
+                            .unwrap_or_else(|| theme.type_size(meta_role, 11.0)),
                     )
-                    .font(theme.font("small", crate::fonts::REGULAR))
+                    .font(theme.font(meta_role, crate::fonts::REGULAR))
                     .color(
                         rows.meta
                             .colour
@@ -1594,11 +1712,12 @@ impl<'a> View<'a> {
                 let words =
                     yapfast_core::themes::chrome::fill(&badge.text, &[("online", online.as_str())]);
                 let ground = crate::themes::argb(badge.ground);
+                let badge_role = badge.font.name();
                 person = person.push(
                     container(
                         text(words)
-                            .size(theme.type_size("small", 10.0))
-                            .font(theme.font("small", MEDIUM))
+                            .size(theme.type_size(badge_role, 10.0))
+                            .font(theme.font(badge_role, MEDIUM))
                             .color(crate::themes::argb(badge.ink)),
                     )
                     .padding([2, 4])
@@ -1890,14 +2009,24 @@ impl<'a> View<'a> {
                     .into(),
             });
         }
+        let activity_themed = self
+            .cx
+            .themes
+            .content(&theme.id, self.cx.layout.theme_content.contains(&theme.id))
+            .is_some_and(|c| c.activity == yapfast_core::themes::content::Follow::Theme);
         let (rest, lit, line) = (theme.wash(0.06), theme.wash(0.12), theme.line);
+        let border = if activity_themed {
+            theme.surface_border("card", 8.0, 1.0, line)
+        } else {
+            crate::style::edge(line, 8.0)
+        };
         let face = iced::widget::button(container(body).padding(8).height(CARD).clip(true))
             .padding(0)
             .width(Length::Fill)
             .on_press(Message::Members(Event::OpenActivity(card.id.clone())))
             .style(move |_, status| iced::widget::button::Style {
                 background: Some(if controls::lights(status) { lit } else { rest }.into()),
-                border: crate::style::edge(line, 8.0),
+                border,
                 ..Default::default()
             });
         // The panel is in no scrollable: the point is the window's already.

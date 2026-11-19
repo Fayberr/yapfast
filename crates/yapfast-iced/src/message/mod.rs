@@ -656,11 +656,11 @@ fn gutter<'a>(
             .state
             .cosmetics
             .decoration(message.decoration.as_deref());
+        let pointed = ctx.pointed.message.as_deref() == Some(message.item.as_str());
         let face = ctx.face(
-            Face::new(message.avatar.as_deref(), &message.author, avatar).decoration(
-                decoration,
-                ctx.pointed.message.as_deref() == Some(message.item.as_str()),
-            ),
+            Face::new(message.avatar.as_deref(), &message.author, avatar)
+                .decoration(decoration, pointed)
+                .illuminated(pointed),
         );
         let face = mouse_area(face)
             .interaction(iced::mouse::Interaction::Pointer)
@@ -888,24 +888,21 @@ fn author_line<'a>(
         yapfast_core::themes::chrome::Place::Author,
         &message.author,
     );
-    let name = Piece::new(
-        vec![
-            span(
-                shown_name(
-                    &author,
-                    style.as_ref().and_then(crate::looks::NameLook::font),
-                )
-                .into_owned(),
-            )
-            .font({
-                let stock = style_font(style.as_ref().and_then(crate::looks::NameLook::font), 500);
-                if style.is_some() {
-                    stock
-                } else {
-                    theme.font("names", stock)
-                }
-            }),
-        ],
+    let shown_author = shown_name(
+        &author,
+        style.as_ref().and_then(crate::looks::NameLook::font),
+    )
+    .into_owned();
+    let hover = crate::theme_effects::name_hover_effect(ctx, &shown_author);
+    let mut name = Piece::new(
+        vec![span(shown_author).font({
+            let stock = style_font(style.as_ref().and_then(crate::looks::NameLook::font), 500);
+            if style.is_some() {
+                stock
+            } else {
+                theme.font("names", stock)
+            }
+        })],
         index,
         0,
         Message::Link,
@@ -924,6 +921,9 @@ fn author_line<'a>(
         ctx.lanes.timeline.selecting,
         theme.token_colour("selection", theme.selection),
     );
+    if let Some(effect) = hover {
+        name = name.hover_effect(effect);
+    }
     let name = mouse_area(name)
         .interaction(iced::mouse::Interaction::Pointer)
         .on_press(Message::Timeline(crate::timeline::Event::OpenAuthor(

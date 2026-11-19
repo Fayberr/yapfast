@@ -27,6 +27,15 @@ impl App {
             plays: crate::pictures::plays(self),
             layout: &self.layout,
             themes: &self.themes,
+            pace: crate::themes::pace_of(
+                self.shell.window.is_some(),
+                self.shell.minimized,
+                self.shell.focused,
+                self.win.settings.get().is_some(),
+                self.layout.theme_performance,
+                self.layout.reduce_motion,
+                self.themes.unfocused(&self.theme.id),
+            ),
             account: &self.account,
             build: &self.build,
             video: &self.video,
@@ -165,6 +174,7 @@ impl App {
             self.keybinds.paused = recording;
             crate::desktop::desktop().pause_keybinds(recording);
         }
+        self.sync_cues();
         Task::batch(tasks)
     }
 

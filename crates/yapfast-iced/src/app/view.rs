@@ -424,7 +424,10 @@ impl App {
         // While the keys are on the messages a press says so, for one off
         // the list to take them (`timeline::keys::follow_press`).
         let layers: Element<'_, Message> = layers.width(Length::Fill).height(Length::Fill).into();
-        let layers = crate::theme_art::overlays(layers, self.ctx());
+        let layers = crate::theme_effects::window_tint(
+            crate::theme_art::overlays(layers, self.ctx()),
+            self.ctx(),
+        );
         let content = crate::widgets::RightPress::spot(layers, &self.pressed)
             .telling(self.keyed.is_some().then_some(Message::Nothing));
         // A middle click scrolls the list under it towards the pointer.
@@ -553,6 +556,8 @@ impl App {
     pub fn show_theme(&mut self, theme: Theme) {
         self.win.icons.replace(self.themes.icons(&theme.id));
         self.themes.apply_sounds(&theme.id);
+        self.accent_started = std::time::Instant::now();
+        self.sync_cues();
         // Content media and Performance can change without changing the
         // palette-valued Theme. Converted stills, fitter jobs and animation
         // players must all restart under the newly resolved content look.

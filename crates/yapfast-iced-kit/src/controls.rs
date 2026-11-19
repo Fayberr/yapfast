@@ -106,13 +106,18 @@ pub fn action<'a, M: Clone + 'a>(
             },
             ring: None,
         },
-        accent: theme.accent,
+        accent: theme.token_colour("focus-ring", theme.accent),
         radius: theme.surface_radius("button", 6.0),
         border: theme.surface_border("button", 6.0, 0.0, Color::TRANSPARENT),
         shadow: theme.surface_shadow("button", Shadow::default()),
         motion: theme.motion(),
         small: false,
         icon: None,
+        label_font: theme.font("labels", BOLD),
+        small_size: theme.type_size("labels", 14.0),
+        large_size: theme.type_size("labels", 15.0),
+        hover_cue: theme.has_hover_cue(),
+        press_cue: theme.has_press_cue(),
     }
 }
 
@@ -131,6 +136,11 @@ pub struct Action<'a, M> {
     small: bool,
     /// An icon before its label, drawn in its ink.
     icon: Option<iced::advanced::image::Handle>,
+    label_font: iced::Font,
+    small_size: f32,
+    large_size: f32,
+    hover_cue: bool,
+    press_cue: bool,
 }
 
 /// A button's ground and ink at rest and lit, and its ring.
@@ -189,8 +199,12 @@ impl<'a, M: Clone + 'a> From<Action<'a, M>> for Element<'a, M> {
         let shown: Element<'a, M> = button(
             container({
                 let label = text(action.label)
-                    .size(if action.small { 14 } else { 15 })
-                    .font(BOLD);
+                    .size(if action.small {
+                        action.small_size
+                    } else {
+                        action.large_size
+                    })
+                    .font(action.label_font);
                 let side = if action.small { 16.0 } else { 18.0 };
                 match action.icon {
                     Some(icon) => Element::from(
@@ -229,7 +243,14 @@ impl<'a, M: Clone + 'a> From<Action<'a, M>> for Element<'a, M> {
         })
         .into();
         if enabled {
-            crate::widgets::motion::interactive(shown, motion, action.accent, radius)
+            crate::widgets::motion::interactive_cued(
+                shown,
+                motion,
+                action.accent,
+                radius,
+                action.hover_cue,
+                action.press_cue,
+            )
         } else {
             shown
         }
@@ -319,7 +340,7 @@ pub fn field_style(
 ) -> impl Fn(&iced::Theme, text_input::Status) -> text_input::Style + use<> {
     let (ink, hint, faint, accent, selection) = (
         theme.text,
-        theme.muted,
+        theme.token_colour("placeholder", theme.muted),
         theme.faint,
         theme.token_colour("focus-ring", theme.accent),
         theme.token_colour("selection", theme.selection),
@@ -345,14 +366,19 @@ pub fn field_style(
 }
 
 /// The window's tooltip: 32 px tall, 14 px bold on the theme's tooltip
-/// ground.
+/// ground, with any owner-theme `tooltip` art/glass under it.
 pub fn tip<'a, M: Clone + 'a>(theme: &Theme, label: impl text::IntoFragment<'a>) -> Element<'a, M> {
-    let tip: Element<'a, M> = container(text(label).size(14).font(BOLD).color(theme.text))
-        .padding([0, 10])
-        .height(32)
-        .align_y(Alignment::Center)
-        .style(tip_style(theme))
-        .into();
+    let tip = container(
+        text(label)
+            .size(theme.type_size("labels", 14.0))
+            .font(theme.font("labels", BOLD))
+            .color(theme.token_colour("on-tooltip", theme.text)),
+    )
+    .padding([0, 10])
+    .height(32)
+    .align_y(Alignment::Center)
+    .style(tip_style(theme));
+    let tip = tip_wrap(theme, tip);
     themed_outline(
         tip,
         theme,
@@ -363,9 +389,47 @@ pub fn tip<'a, M: Clone + 'a>(theme: &Theme, label: impl text::IntoFragment<'a>)
     )
 }
 
+/// Wraps a tooltip's body with the active package's `tooltip` art, glass and
+/// reserve padding, when declared.
+pub fn tip_wrap<'a, M: 'a>(theme: &Theme, content: impl Into<Element<'a, M>>) -> Element<'a, M> {
+    let mut content = content.into();
+    let Some(surface) = theme.tooltip_surface() else {
+        return content;
+    };
+    if let Some([top, right, bottom, left]) = surface.reserve {
+        content = container(content)
+            .padding(iced::Padding {
+                top,
+                right,
+                bottom,
+                left,
+            })
+            .into();
+    }
+    let background = theme.surface_paint("tooltip");
+    let base = container(Space::new())
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(move |_| container::Style {
+            background: Some(background),
+            ..Default::default()
+        });
+    let mut layers = iced::widget::Stack::with_children([content]);
+    if !surface.layers.is_empty() {
+        layers = layers.push_under(Element::new(TooltipArtWidget {
+            layers: surface.layers,
+        }));
+    }
+    if let Some(glass) = surface.glass {
+        layers = layers.push_under(Element::new(TooltipGlassWidget { glass }));
+    }
+    layers.push_under(base).into()
+}
+
 /// A tooltip's ground, round corners and shadow, for one with more in it
 /// than a label (a reaction's).
 pub fn tip_style(theme: &Theme) -> impl Fn(&iced::Theme) -> container::Style + use<> {
+    let decorated = theme.tooltip_surface().is_some();
     let ground = theme.surface_paint("tooltip");
     let mut border = theme.surface_border("tooltip", 6.0, 0.0, Color::TRANSPARENT);
     if theme.outline("tooltip").is_some() {
@@ -383,7 +447,7 @@ pub fn tip_style(theme: &Theme) -> impl Fn(&iced::Theme) -> container::Style + u
         },
     );
     move |_| container::Style {
-        background: Some(ground),
+        background: (!decorated).then_some(ground),
         shadow,
         border,
         ..Default::default()
@@ -630,7 +694,7 @@ pub fn menu_panel_over(
     transparent: bool,
 ) -> impl Fn(&iced::Theme) -> container::Style + use<> {
     let ground = theme.surface_paint("menu");
-    let edge = theme.menu_line;
+    let edge = theme.token_colour("menu-line", theme.menu_line);
     let mut border = theme.surface_border("menu", 8.0, 1.0, edge);
     if theme.outline("menu").is_some() {
         border.width = 0.0;
@@ -768,20 +832,23 @@ impl crate::look::Look<'_> {
         let tall = item.subtitle.is_some();
         let mut face = row![].spacing(8).align_y(Alignment::Center);
         match item.icon {
-            _ if current => face = face.push(self.glyph(Icon::Check, ITEM_ICON, theme.accent)),
+            _ if current => {
+                face = face.push(self.glyph(Icon::Check, ITEM_ICON, theme.accent_text()))
+            }
             Some(icon) => face = face.push(self.glyph(icon, ITEM_ICON, icon_ink)),
             None if item.slot => face = face.push(Space::new().width(slot).height(slot)),
             None => {}
         }
         let label = text(item.label)
-            .size(14)
-            .font(if current { BOLD } else { MEDIUM })
+            .size(theme.type_size("labels", 14.0))
+            .font(theme.font("labels", if current { BOLD } else { MEDIUM }))
             .wrapping(text::Wrapping::None);
         let words: Element<'a, M> = match item.subtitle {
             Some(subtitle) => column![
                 label,
                 text(subtitle)
-                    .size(12)
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", crate::fonts::REGULAR))
                     .color(theme.muted)
                     .wrapping(text::Wrapping::None)
             ]
@@ -816,7 +883,7 @@ impl crate::look::Look<'_> {
         } else {
             inks
         };
-        button(face)
+        let row_button: Element<'a, M> = button(face)
             .padding([0, 8])
             .width(Length::Fill)
             .height(height)
@@ -833,7 +900,23 @@ impl crate::look::Look<'_> {
                     ..Default::default()
                 }
             })
-            .into()
+            .into();
+        if !item.disabled && (theme.has_hover_cue() || theme.has_press_cue()) {
+            crate::widgets::motion::interactive_cued(
+                row_button,
+                crate::theme::Motion {
+                    hover: crate::theme::Hover::None,
+                    press: crate::theme::Press::None,
+                    ..theme.motion()
+                },
+                theme.accent,
+                4.0,
+                theme.has_hover_cue(),
+                theme.has_press_cue(),
+            )
+        } else {
+            row_button
+        }
     }
 
     /// A menu row's checkbox: 18 px, the accent's with a tick in it while
@@ -877,6 +960,7 @@ pub struct IconButton<'a, M> {
     side: f32,
     glyph: u32,
     ground: Ground,
+    hover_wash: Option<Color>,
     radius: f32,
     below: bool,
 }
@@ -915,6 +999,7 @@ impl<'a> crate::look::Look<'a> {
             side: 28.0,
             glyph: 18,
             ground: Ground::Clear,
+            hover_wash: None,
             radius: 6.0,
             below: false,
         }
@@ -972,6 +1057,11 @@ impl<'a, M: Clone + 'a> IconButton<'a, M> {
         self.below = true;
         self
     }
+
+    pub fn hover_wash(mut self, color: Color) -> Self {
+        self.hover_wash = Some(color);
+        self
+    }
 }
 
 impl<'a, M: Clone + 'a> From<IconButton<'a, M>> for Element<'a, M> {
@@ -985,6 +1075,7 @@ impl<'a, M: Clone + 'a> From<IconButton<'a, M>> for Element<'a, M> {
             side,
             glyph,
             ground,
+            hover_wash,
             radius,
             below,
         } = icon_button;
@@ -1014,9 +1105,11 @@ impl<'a, M: Clone + 'a> From<IconButton<'a, M>> for Element<'a, M> {
                 .style(style)
         };
         let shown: Element<'a, M> = match ground {
-            Ground::Clear => {
-                pressed(face_in(rest_ink), lit_style(None, theme.wash(0.1), radius)).into()
-            }
+            Ground::Clear => pressed(
+                face_in(rest_ink),
+                lit_style(None, hover_wash.unwrap_or_else(|| theme.wash(0.1)), radius),
+            )
+            .into(),
             Ground::Filled(fill) => {
                 let lit = crate::theme::mix(fill, theme.overlay, 0.9);
                 pressed(
@@ -1042,7 +1135,14 @@ impl<'a, M: Clone + 'a> From<IconButton<'a, M>> for Element<'a, M> {
             }
         };
         let shown = if enabled {
-            crate::widgets::motion::interactive(shown, theme.motion(), theme.accent, radius)
+            crate::widgets::motion::interactive_cued(
+                shown,
+                theme.motion(),
+                theme.accent,
+                radius,
+                theme.has_hover_cue(),
+                theme.has_press_cue(),
+            )
         } else {
             shown
         };
@@ -1123,7 +1223,7 @@ pub fn count_pill<'a, M: Clone + 'a>(
     let danger = theme.danger;
     let number = text(count.to_owned())
         .size(look.size)
-        .font(BOLD)
+        .font(theme.font("small", BOLD))
         .color(theme.on_danger)
         .wrapping(text::Wrapping::None);
     let pill = container(number)
@@ -1151,11 +1251,30 @@ pub fn count_pill<'a, M: Clone + 'a>(
 /// on a tile's name, in the dock. With `press` it's a button that watches
 /// the stream, lit under the pointer.
 pub fn live_pill<'a, M: Clone + 'a>(theme: &Theme, press: Option<M>) -> Element<'a, M> {
-    let (rest, lit) = (theme.danger, theme.danger_hover);
-    let face = container(text("LIVE").size(10).font(BOLD).color(theme.on_danger))
-        .padding([0, 5])
-        .height(16)
-        .align_y(Alignment::Center);
+    live_pill_in(theme, false, press)
+}
+
+/// [`live_pill`], switching to the theme's accent colours when `themed` is
+/// set by an allowed package's `content.activity: theme`.
+pub fn live_pill_in<'a, M: Clone + 'a>(
+    theme: &Theme,
+    themed: bool,
+    press: Option<M>,
+) -> Element<'a, M> {
+    let (rest, lit, ink) = if themed {
+        (theme.accent, theme.accent_hover, theme.on_accent)
+    } else {
+        (theme.danger, theme.danger_hover, theme.on_danger)
+    };
+    let face = container(
+        text("LIVE")
+            .size(10)
+            .font(theme.font("small", BOLD))
+            .color(ink),
+    )
+    .padding([0, 5])
+    .height(16)
+    .align_y(Alignment::Center);
     let border = theme.surface_border("chip", 8.0, 0.0, Color::TRANSPARENT);
     let shadow = theme.surface_shadow("chip", Shadow::default());
     match press {
@@ -1183,14 +1302,19 @@ pub fn live_pill<'a, M: Clone + 'a>(theme: &Theme, press: Option<M>) -> Element<
 /// A heading over a group of a menu's choices, as the share menu's
 /// "SCREENS": 12 px bold in the muted ink.
 pub fn heading<'a, M: Clone + 'a>(theme: &Theme, label: &'a str, top: f32) -> Element<'a, M> {
-    container(text(label).size(12).font(BOLD).color(theme.muted))
-        .padding(iced::Padding {
-            top,
-            right: 0.0,
-            bottom: 4.0,
-            left: 8.0,
-        })
-        .into()
+    container(
+        text(label)
+            .size(theme.type_size("labels", 12.0))
+            .font(theme.font("labels", BOLD))
+            .color(theme.muted),
+    )
+    .padding(iced::Padding {
+        top,
+        right: 0.0,
+        bottom: 4.0,
+        left: 8.0,
+    })
+    .into()
 }
 
 /// A volume slider: its label and the value as a percentage over a 4 px
@@ -1487,8 +1611,8 @@ pub fn choices_within<'a, M: Clone + 'a>(
             button(
                 container(
                     text(*option)
-                        .size(14)
-                        .font(if chosen { BOLD } else { MEDIUM })
+                        .size(theme.type_size("labels", 14.0))
+                        .font(theme.font("labels", if chosen { BOLD } else { MEDIUM }))
                         .wrapping(text::Wrapping::None),
                 )
                 .center_x(Length::Fill)
@@ -1571,4 +1695,225 @@ pub fn tab<'a, M: Clone + 'a>(tab: Tab<'a>, press: M) -> Element<'a, M> {
         ..Default::default()
     })
     .into()
+}
+
+struct TooltipArtWidget {
+    layers: Vec<crate::theme::TooltipLayer>,
+}
+
+impl<M> iced::advanced::Widget<M, iced::Theme, iced::Renderer> for TooltipArtWidget {
+    fn size(&self) -> iced::Size<Length> {
+        iced::Size::new(Length::Fill, Length::Fill)
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut iced::advanced::widget::Tree,
+        _renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        iced::advanced::layout::Node::new(limits.max())
+    }
+
+    fn draw(
+        &self,
+        _tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        _theme: &iced::Theme,
+        _style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        _viewport: &iced::Rectangle,
+    ) {
+        use crate::theme::TooltipFit;
+        use iced::advanced::Renderer as _;
+
+        let bounds = layout.bounds();
+        if bounds.width <= 0.0 || bounds.height <= 0.0 {
+            return;
+        }
+        renderer.with_layer(bounds, |renderer| {
+            for layer in &self.layers {
+                let Some((natural_w, natural_h)) = (layer.width > 0 && layer.height > 0)
+                    .then_some((layer.width as f32, layer.height as f32))
+                else {
+                    continue;
+                };
+                let drawn_size = if let Some((w, h)) = layer.size {
+                    iced::Size::new(w * layer.scale, h * layer.scale)
+                } else {
+                    match layer.fit {
+                        TooltipFit::Stretch => bounds.size(),
+                        TooltipFit::Cover => {
+                            let scale = (bounds.width / natural_w).max(bounds.height / natural_h)
+                                * layer.scale;
+                            iced::Size::new(natural_w * scale, natural_h * scale)
+                        }
+                        TooltipFit::Contain => {
+                            let scale = (bounds.width / natural_w).min(bounds.height / natural_h)
+                                * layer.scale;
+                            iced::Size::new(natural_w * scale, natural_h * scale)
+                        }
+                        TooltipFit::Tile => {
+                            iced::Size::new(natural_w * layer.scale, natural_h * layer.scale)
+                        }
+                    }
+                };
+                if drawn_size.width <= 0.0 || drawn_size.height <= 0.0 {
+                    continue;
+                }
+                let handle = &layer.handle;
+                if layer.fit == TooltipFit::Tile {
+                    let mut y = bounds.y;
+                    while y < bounds.y + bounds.height {
+                        let mut x = bounds.x;
+                        while x < bounds.x + bounds.width {
+                            crate::widgets::draw_picture(
+                                renderer,
+                                handle,
+                                iced::Rectangle::new(iced::Point::new(x, y), drawn_size),
+                                [0.0; 4],
+                                layer.opacity,
+                            );
+                            x += drawn_size.width;
+                        }
+                        y += drawn_size.height;
+                    }
+                } else {
+                    let pos = iced::Point::new(
+                        bounds.x + (bounds.width - drawn_size.width) * layer.position.0,
+                        bounds.y + (bounds.height - drawn_size.height) * layer.position.1,
+                    );
+                    crate::widgets::draw_picture(
+                        renderer,
+                        handle,
+                        iced::Rectangle::new(pos, drawn_size),
+                        [0.0; 4],
+                        layer.opacity,
+                    );
+                }
+            }
+        });
+    }
+}
+
+struct TooltipGlassWidget {
+    glass: crate::theme::TooltipGlass,
+}
+
+impl<M> iced::advanced::Widget<M, iced::Theme, iced::Renderer> for TooltipGlassWidget {
+    fn size(&self) -> iced::Size<Length> {
+        iced::Size::new(Length::Fill, Length::Fill)
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut iced::advanced::widget::Tree,
+        _renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        iced::advanced::layout::Node::new(limits.max())
+    }
+
+    fn draw(
+        &self,
+        _tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        _theme: &iced::Theme,
+        _style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        _viewport: &iced::Rectangle,
+    ) {
+        use iced::advanced::{
+            Renderer as _,
+            image::{self as raster, Renderer as _},
+        };
+
+        let bounds = layout.bounds();
+        let inset = (self.glass.gap / 2.0).max(0.0);
+        let pane = iced::Rectangle::new(
+            bounds.position() + Vector::new(inset, inset),
+            iced::Size::new(
+                (bounds.width - inset * 2.0).max(0.0),
+                (bounds.height - inset * 2.0).max(0.0),
+            ),
+        );
+        if pane.width <= 0.0 || pane.height <= 0.0 {
+            return;
+        }
+        let whole = iced::Rectangle::new(
+            iced::Point::ORIGIN,
+            iced::Size::new(self.glass.window.0 as f32, self.glass.window.1 as f32),
+        );
+        renderer.draw_image(
+            raster::Image {
+                handle: self.glass.handle.clone(),
+                filter_method: raster::FilterMethod::Linear,
+                rotation: iced::Radians(0.0),
+                border_radius: Default::default(),
+                opacity: 1.0,
+                snap: true,
+            },
+            whole,
+            pane,
+        );
+        let mut ground = self.glass.ground;
+        ground.a *= self.glass.opacity;
+        let (rim, rim_width) = self.glass.rim.unwrap_or((Color::TRANSPARENT, 0.0));
+        renderer.fill_quad(
+            iced::advanced::renderer::Quad {
+                bounds: pane,
+                border: Border {
+                    color: rim,
+                    width: rim_width,
+                    radius: self.glass.radius.into(),
+                },
+                ..Default::default()
+            },
+            ground,
+        );
+        if let Some(colour) = self.glass.highlight {
+            renderer.fill_quad(
+                iced::advanced::renderer::Quad {
+                    bounds: iced::Rectangle::new(pane.position(), iced::Size::new(pane.width, 1.0)),
+                    ..Default::default()
+                },
+                colour,
+            );
+            renderer.fill_quad(
+                iced::advanced::renderer::Quad {
+                    bounds: iced::Rectangle::new(
+                        pane.position(),
+                        iced::Size::new(1.0, pane.height),
+                    ),
+                    ..Default::default()
+                },
+                colour,
+            );
+        }
+        if let Some((colour, blur)) = self.glass.inset {
+            let reach = blur.max(1.0).min(pane.width.min(pane.height) / 3.0);
+            for (at, size) in [
+                (pane.position(), iced::Size::new(pane.width, reach)),
+                (pane.position(), iced::Size::new(reach, pane.height)),
+                (
+                    iced::Point::new(pane.x, pane.y + pane.height - reach),
+                    iced::Size::new(pane.width, reach),
+                ),
+                (
+                    iced::Point::new(pane.x + pane.width - reach, pane.y),
+                    iced::Size::new(reach, pane.height),
+                ),
+            ] {
+                renderer.fill_quad(
+                    iced::advanced::renderer::Quad {
+                        bounds: iced::Rectangle::new(at, size),
+                        ..Default::default()
+                    },
+                    colour.scale_alpha(0.22),
+                );
+            }
+        }
+    }
 }

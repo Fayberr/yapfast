@@ -257,10 +257,15 @@ impl<'a> super::View<'a> {
         }
         face = face.push(
             row![
-                elide(theme.heading(&head.name).into_owned())
-                    .size(theme.header_size(15.0))
-                    .font(theme.header_font(SEMIBOLD))
-                    .color(ink),
+                crate::theme_effects::slot(
+                    elide(theme.heading(&head.name).into_owned())
+                        .size(theme.header_size(15.0))
+                        .font(theme.header_font(SEMIBOLD))
+                        .color(ink),
+                    self.cx,
+                    yapfast_core::themes::package::Slot::ServerName,
+                    None,
+                ),
                 self.cx.look.glyph(
                     if open {
                         Icon::ChevronUp

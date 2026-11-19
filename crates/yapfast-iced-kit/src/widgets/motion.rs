@@ -40,6 +40,8 @@ struct Interactive {
     style: ThemeMotion,
     glow: Color,
     radius: f32,
+    hover_cue: bool,
+    press_cue: bool,
 }
 
 /// Applies the resolved hover and press motion to an ordinary interactive
@@ -50,12 +52,26 @@ pub fn interactive<'a, M: 'a>(
     glow: Color,
     radius: f32,
 ) -> Element<'a, M> {
+    interactive_cued(surface, style, glow, radius, false, false)
+}
+
+/// Applies hover/press motion and optional interface sound cues.
+pub fn interactive_cued<'a, M: 'a>(
+    surface: impl Into<Element<'a, M>>,
+    style: ThemeMotion,
+    glow: Color,
+    radius: f32,
+    hover_cue: bool,
+    press_cue: bool,
+) -> Element<'a, M> {
     Wrap::new(
         surface,
         Interactive {
             style,
             glow,
             radius,
+            hover_cue,
+            press_cue,
         },
     )
     .into()
@@ -76,6 +92,9 @@ impl<M> Hooks<M> for Interactive {
         if matches!(event, iced::Event::Mouse(_)) {
             let pointed = at.cursor.is_over(at.bounds);
             if pointed != state.pointed {
+                if pointed && self.hover_cue {
+                    crate::theme::emit_cue(crate::theme::CueEvent::Hover);
+                }
                 state.pointed = pointed;
                 state.from = state.amount;
                 state.target = f32::from(pointed);
@@ -87,6 +106,9 @@ impl<M> Hooks<M> for Interactive {
             iced::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
                 if state.pointed =>
             {
+                if self.press_cue {
+                    crate::theme::emit_cue(crate::theme::CueEvent::Press);
+                }
                 state.pressed = true;
                 shell.request_redraw();
             }

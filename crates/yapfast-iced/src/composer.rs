@@ -863,7 +863,7 @@ fn composer_box<'a>(ctx: crate::ctx::Ctx<'a>, look: &Look) -> Element<'a, Messag
         field::Colors {
             ground: iced::Color::TRANSPARENT,
             text: theme.text,
-            placeholder: theme.placeholder,
+            placeholder: theme.token_colour("placeholder", theme.placeholder),
             selection: theme.token_colour("selection", theme.selection),
         },
     )
@@ -875,6 +875,7 @@ fn composer_box<'a>(ctx: crate::ctx::Ctx<'a>, look: &Look) -> Element<'a, Messag
         left: 6.0,
     })
     .enabled(look.enabled)
+    .font(theme.font("body", crate::fonts::REGULAR))
     .pastes()
     .tabs(commanding)
     .suggesting(crate::suggest::suggesting(ctx, Writing::Draft));
@@ -948,13 +949,13 @@ fn composer_box<'a>(ctx: crate::ctx::Ctx<'a>, look: &Look) -> Element<'a, Messag
         .align_y(Alignment::End)
         .padding(Padding::ZERO.left(10).right(8));
     let ground = if look.enabled {
-        theme.composer
+        theme.token_colour("composer", theme.composer)
     } else {
         theme.field
     };
     // Discord's outline: faint, and a notch lighter with the keys.
     let edge = if ctx.composer.focused {
-        faded(theme.muted, 0.55)
+        theme.token_colour("composer-focus", faded(theme.muted, 0.55))
     } else {
         theme.outline_field
     };
@@ -1026,8 +1027,8 @@ pub fn reply_bar_for<'a>(
     let ink = if ping { theme.accent } else { theme.muted };
     let toggle = button(
         text(if ping { "@ On" } else { "@ Off" })
-            .size(13)
-            .font(BOLD)
+            .size(theme.type_size("labels", 13.0))
+            .font(theme.font("labels", BOLD))
             .color(ink),
     )
     .padding([0, 8])
@@ -1044,7 +1045,8 @@ pub fn reply_bar_for<'a>(
         row![
             ctx.look.glyph(Icon::Reply, 16, theme.muted),
             text(label)
-                .size(14)
+                .size(theme.type_size("small", 14.0))
+                .font(theme.font("small", crate::fonts::REGULAR))
                 .color(theme.secondary)
                 .wrapping(text::Wrapping::None)
                 .width(Length::Fill),

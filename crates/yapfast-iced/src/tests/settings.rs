@@ -1406,3 +1406,33 @@ fn edit_profile_from_settings_closes_them_under_the_editor() {
     );
     assert!(app.win.settings.get().is_none(), "Settings close under it");
 }
+
+#[test]
+fn themes_page_shows_empty_state_actions_and_gallery_toggle_with_cost() {
+    let (mut app, _folder) = preview();
+    open(&mut app, Section::Themes);
+    assert!(shows(&app, "Browse the Marketplace"));
+    assert!(shows(&app, "Add from URL"));
+    assert!(shows(&app, "Create"));
+
+    let _ = app.update(crate::app::settings(Event::Marketplace(
+        crate::settings::theme_marketplace::Event::ToggleGallery(true),
+    )));
+    assert!(
+        app.win
+            .settings
+            .get()
+            .is_some_and(|s| s.marketplace.gallery),
+        "gallery view state toggles cleanly"
+    );
+    let _ = app.update(crate::app::settings(Event::Marketplace(
+        crate::settings::theme_marketplace::Event::ToggleCostDetails("review".into()),
+    )));
+    assert!(
+        app.win
+            .settings
+            .get()
+            .is_some_and(|s| s.marketplace.cost_details.contains("review")),
+        "cost details disclosure state toggles cleanly"
+    );
+}

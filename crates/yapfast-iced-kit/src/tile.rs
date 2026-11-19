@@ -289,8 +289,8 @@ pub fn chip<'a, M: Clone + 'a>(
     }
     face = face.push(
         text(name)
-            .size(14)
-            .font(BOLD)
+            .size(theme.type_size("names", 14.0))
+            .font(theme.font("names", BOLD))
             .color(Color::WHITE)
             .wrapping(text::Wrapping::None),
     );
@@ -300,8 +300,9 @@ pub fn chip<'a, M: Clone + 'a>(
     if let Some(note) = note {
         face = face.push(
             text(note)
-                .size(13)
-                .color(theme.accent)
+                .size(theme.type_size("small", 13.0))
+                .font(theme.font("small", crate::fonts::REGULAR))
+                .color(theme.accent_text())
                 .wrapping(text::Wrapping::None),
         );
     }
@@ -331,16 +332,21 @@ pub fn glass_button<'a, M: Clone + 'a>(
     message: M,
 ) -> Element<'a, M> {
     let theme = look.theme;
-    let lit = crate::theme::mix(GLASS, theme.overlay, 0.9);
+    let lit = theme.token_colour(
+        "card-button-hover",
+        crate::theme::mix(GLASS, theme.overlay, 0.9),
+    );
+    let rest = theme.token_colour("card-button", GLASS);
+    let ink = theme.token_colour("card-button-icon", Color::WHITE);
     let border = theme.surface_border("card-button", BUTTON / 2.0, 0.0, Color::TRANSPARENT);
     let shadow = theme.surface_shadow("card-button", Shadow::default());
-    let face = button(look.glyph(icon, 20, Color::WHITE).boxed(BUTTON))
+    let face = button(look.glyph(icon, 20, ink).boxed(BUTTON))
         .padding(0)
         .width(BUTTON)
         .height(BUTTON)
         .on_press(message)
         .style(move |_, status| button::Style {
-            background: Some(if lights(status) { lit } else { GLASS }.into()),
+            background: Some(if lights(status) { lit } else { rest }.into()),
             border,
             shadow,
             ..Default::default()

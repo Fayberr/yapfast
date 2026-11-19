@@ -703,7 +703,7 @@ impl<'c> crate::ctx::Ctx<'c> {
             // links and time) shows in the colour alone.
             if run.link.as_deref().is_some_and(pilled) {
                 piece = piece
-                    .background(Color { a: 0.16, ..color })
+                    .background(theme.token_colour("mention-chip", Color { a: 0.16, ..color }))
                     .border(crate::style::round(4))
                     .padding(Padding {
                         top: -1.5,
@@ -719,7 +719,7 @@ impl<'c> crate::ctx::Ctx<'c> {
         }
         if run.code {
             piece = piece
-                .background(theme.panel)
+                .background(theme.token_colour("code", theme.panel))
                 .border(crate::style::round(3))
                 .padding(Padding::from([0, 2]));
         }

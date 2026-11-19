@@ -382,8 +382,8 @@ fn friend_row<'a>(
         Point::new(20.0, 20.0),
     )));
     let name = crate::elide::elide(friend.name.as_str())
-        .size(16)
-        .font(BOLD)
+        .size(theme.type_size("names", 16.0))
+        .font(theme.font("names", BOLD))
         .color(theme.text);
     let status = Status::of(friend.activity.as_deref());
     let sub: Element<'a, Message> = match (spot, status.is_empty()) {
@@ -400,7 +400,8 @@ fn friend_row<'a>(
             .into()
         }
         (None, true) => text(presence_word(presence))
-            .size(13)
+            .size(theme.type_size("small", 13.0))
+            .font(theme.font("small", crate::fonts::REGULAR))
             .color(theme.muted)
             .into(),
     };

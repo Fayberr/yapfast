@@ -9,7 +9,7 @@ use iced::{
     widget::{Space, column, container, opaque, row, stack, text},
 };
 
-use crate::{controls::outside, fonts::BOLD, style::card_shadow, theme::Theme};
+use crate::{fonts::BOLD, style::card_shadow, theme::Theme};
 
 /// The width of a dialog with a question and its answers.
 pub const CONFIRM_WIDTH: f32 = 440.0;
@@ -25,8 +25,8 @@ impl<'a> crate::look::Look<'a> {
     ) -> Element<'a, M> {
         row![
             text(title)
-                .size(18)
-                .font(BOLD)
+                .size(self.theme.title_size(18.0))
+                .font(self.theme.font("headings", BOLD))
                 .color(self.theme.text)
                 .wrapping(text::Wrapping::None)
                 .width(Length::Fill),
@@ -64,8 +64,8 @@ impl<'a> crate::look::Look<'a> {
         let theme = self.theme;
         let mut words = column![
             text(name)
-                .size(16)
-                .font(BOLD)
+                .size(theme.type_size("names", 16.0))
+                .font(theme.font("names", BOLD))
                 .color(theme.text)
                 .wrapping(text::Wrapping::None),
         ]
@@ -145,8 +145,9 @@ pub fn dialog<'a, M: Clone + 'a>(
         12.0,
     ));
     // Kept inside the window, by its padding, both ways.
+    let scrim = theme.token_colour("scrim", crate::controls::DIM);
     opaque(stack![
-        outside(on_outside, true),
+        crate::controls::dimmed(on_outside, scrim),
         container(crate::widgets::motion::grow(card))
             .padding(ROOM / 2.0)
             .center(Length::Fill)
@@ -194,8 +195,9 @@ pub fn panel<'a, M: Clone + 'a>(
         card = card.height(height);
     }
     let card = crate::controls::themed_outline(card, theme, "dialog", theme.edge, drawn_width, 8.0);
+    let scrim = theme.token_colour("scrim", PANEL_DIM);
     opaque(stack![
-        crate::controls::dimmed(on_outside, PANEL_DIM),
+        crate::controls::dimmed(on_outside, scrim),
         container(crate::widgets::motion::grow(opaque(card))).center(Length::Fill)
     ])
 }

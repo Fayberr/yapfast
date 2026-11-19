@@ -33,6 +33,7 @@ pub struct Ctx<'a> {
     /// What `layout.json` keeps, and the themes it offers.
     pub layout: &'a Layout,
     pub themes: &'a Themes,
+    pub pace: crate::themes::Pace,
     /// The account's card, as the rail's foot shows it.
     pub account: &'a Account,
     /// Which build this is.

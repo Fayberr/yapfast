@@ -50,6 +50,7 @@ pub struct Shell {
     /// The window, while open.
     pub window: Option<window::Id>,
     pub focused: bool,
+    pub minimized: bool,
     pub maximized: bool,
     pub full_screen: bool,
     /// The size the window had while it wasn't maximized, which one made
@@ -188,7 +189,9 @@ impl App {
                 if focused {
                     return window::request_user_attention(id, None);
                 }
-                Task::none()
+                window::is_minimized(id).map(|min| {
+                    Message::Bar(crate::window_bar::Event::Minimized(min.unwrap_or(false)))
+                })
             }
             Event::Focused(..) => Task::none(),
             Event::Closed(id) => {
@@ -268,10 +271,14 @@ impl App {
     /// only while someone may be looking, and counts the open conversation
     /// as read only while the window is in front.
     fn focus_changed(&mut self, focused: bool) {
+        if focused {
+            self.shell.minimized = false;
+        }
         if std::mem::replace(&mut self.shell.focused, focused) != focused {
             self.client.dispatch(Action::WindowFocused(focused));
             let reads = self.reads();
             self.client.dispatch(Action::Reading(reads));
+            self.sync_cues();
         }
     }
 
@@ -474,6 +481,7 @@ impl App {
         if self.shell.window != Some(id) {
             return Task::none();
         }
+        self.shell.minimized = false;
         self.focus_changed(true);
         let tell = self.shell.tell.clone();
         let decorate = window::run(id, move |window| {
@@ -593,6 +601,7 @@ impl App {
     /// stop being made for tiles nobody sees.
     fn forget_window(&mut self, keep: crate::app::Keep) -> Task<Message> {
         use crate::slot::Why;
+        self.shell.minimized = false;
         self.focus_changed(false);
         // The next window's timeline starts at its end: where this one was
         // read is kept for it.

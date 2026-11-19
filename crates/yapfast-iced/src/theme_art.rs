@@ -18,7 +18,7 @@ use yapfast_core::themes::package::art::{
 
 use crate::{
     app::Message,
-    themes::{ArtLayer, GlassPane, ParticleEvent, ThemeParticles, TileArtImage},
+    themes::{ArtLayer, GlassPane, Pace, ParticleEvent, ThemeParticles, TileArtImage},
     widgets::gradient_quad,
 };
 
@@ -27,6 +27,7 @@ struct Art<'a> {
     performance: Performance,
     reduced_motion: bool,
     running: bool,
+    pace: Pace,
 }
 
 struct Procedural<'a> {
@@ -34,6 +35,7 @@ struct Procedural<'a> {
     performance: Performance,
     reduced_motion: bool,
     running: bool,
+    pace: Pace,
 }
 
 #[derive(Default)]
@@ -82,6 +84,15 @@ fn clock_seconds(tree: &Tree) -> f32 {
 
 fn animation_running(performance: Performance, plays: bool) -> bool {
     performance == Performance::Full || (performance == Performance::Balanced && plays)
+}
+
+fn frame_fps(performance: Performance, pace: Pace) -> u64 {
+    let base = if performance == Performance::Full {
+        60
+    } else {
+        30
+    };
+    pace.cap_fps(base).max(1)
 }
 
 #[derive(Clone, Copy)]
@@ -911,11 +922,7 @@ impl<M> Widget<M, Theme, iced::Renderer> for Procedural<'_> {
             });
         tick_clock(tree, event, moving);
         if moving && let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            let fps = if self.performance == Performance::Full {
-                60
-            } else {
-                30
-            };
+            let fps = frame_fps(self.performance, self.pace);
             shell.request_redraw_at(*now + Duration::from_millis(1000 / fps));
         }
     }
@@ -1185,11 +1192,7 @@ impl<M> Widget<M, Theme, iced::Renderer> for Art<'_> {
             });
         tick_clock(tree, event, moving);
         if moving && let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            let fps = if self.performance == Performance::Full {
-                60
-            } else {
-                30
-            };
+            let fps = frame_fps(self.performance, self.pace);
             shell.request_redraw_at(*now + Duration::from_millis(1000 / fps));
         }
     }
@@ -1436,6 +1439,7 @@ struct Particles<'a> {
     performance: Performance,
     reduced_motion: bool,
     running: bool,
+    pace: Pace,
     depth: Depth,
 }
 
@@ -1498,11 +1502,7 @@ impl<M> Widget<M, Theme, iced::Renderer> for Particles<'_> {
         let moving = self.running && (ambient || events);
         tick_clock(tree, event, moving);
         if moving && let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            let fps = if self.performance == Performance::Full {
-                60
-            } else {
-                30
-            };
+            let fps = frame_fps(self.performance, self.pace);
             shell.request_redraw_at(*now + Duration::from_millis(1000 / fps));
         }
     }
@@ -1745,6 +1745,7 @@ struct NineSlice<'a> {
     performance: Performance,
     reduced_motion: bool,
     running: bool,
+    pace: Pace,
 }
 
 impl<M> Widget<M, Theme, iced::Renderer> for NineSlice<'_> {
@@ -1791,11 +1792,7 @@ impl<M> Widget<M, Theme, iced::Renderer> for NineSlice<'_> {
             && (self.performance == Performance::Full || !self.image.art.layer.heavy);
         tick_clock(tree, event, moving);
         if moving && let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
-            let fps = if self.performance == Performance::Full {
-                60
-            } else {
-                30
-            };
+            let fps = frame_fps(self.performance, self.pace);
             shell.request_redraw_at(*now + Duration::from_millis(1000 / fps));
         }
     }
@@ -1961,7 +1958,7 @@ pub fn tile_art_opacity<'a>(
 ) -> Option<Element<'a, Message>> {
     let image = ctx.themes.list_art(&ctx.look.theme.id, tile, surface)?;
     let (performance, reduced_motion) = ctx.themes.art_motion(&ctx.look.theme.id);
-    let running = animation_running(performance, ctx.plays);
+    let running = animation_running(performance, ctx.plays) && ctx.pace.runs();
     Some(
         NineSlice {
             image,
@@ -1971,6 +1968,7 @@ pub fn tile_art_opacity<'a>(
             performance,
             reduced_motion,
             running,
+            pace: ctx.pace,
         }
         .into(),
     )
@@ -1990,7 +1988,7 @@ pub fn surface<'a>(
     let layers = ctx.themes.art(&ctx.look.theme.id, surface);
     let glass = ctx.themes.glass(&ctx.look.theme.id, surface);
     let (performance, reduced_motion) = ctx.themes.art_motion(&ctx.look.theme.id);
-    let running = animation_running(performance, ctx.plays);
+    let running = animation_running(performance, ctx.plays) && ctx.pace.runs();
     let mut content = content.into();
     if let Some(reserve) = ctx.themes.art_reserve(&ctx.look.theme.id, surface) {
         content = iced::widget::container(content)
@@ -2025,6 +2023,7 @@ pub fn surface<'a>(
             performance,
             reduced_motion,
             running,
+            pace: ctx.pace,
         });
     }
     if let Some(pane) = glass {
@@ -2054,7 +2053,7 @@ pub fn surface_over<'a>(
         return content;
     }
     let (performance, reduced_motion) = ctx.themes.art_motion(&ctx.look.theme.id);
-    let running = animation_running(performance, ctx.plays);
+    let running = animation_running(performance, ctx.plays) && ctx.pace.runs();
     iced::widget::stack![
         content,
         Art {
@@ -2062,6 +2061,7 @@ pub fn surface_over<'a>(
             performance,
             reduced_motion,
             running,
+            pace: ctx.pace,
         }
     ]
     .into()
@@ -2115,7 +2115,8 @@ fn under_particles<'a>(
             events,
             performance,
             reduced_motion,
-            running: animation_running(performance, ctx.plays),
+            running: animation_running(performance, ctx.plays) && ctx.pace.runs(),
+            pace: ctx.pace,
             depth: Depth::Under,
         },
         content
@@ -2140,7 +2141,7 @@ fn overlay_layers<'a>(
     let layers = ctx.themes.overlays(&ctx.look.theme.id, chat);
     let procedural = ctx.themes.procedural_overlays(&ctx.look.theme.id, chat);
     let (performance, reduced_motion) = ctx.themes.art_motion(&ctx.look.theme.id);
-    let running = animation_running(performance, ctx.plays);
+    let running = animation_running(performance, ctx.plays) && ctx.pace.runs();
     let particles = (!chat)
         .then(|| ctx.themes.particles(&ctx.look.theme.id))
         .flatten();
@@ -2154,6 +2155,7 @@ fn overlay_layers<'a>(
             performance,
             reduced_motion,
             running,
+            pace: ctx.pace,
         });
     }
     if !procedural.is_empty() {
@@ -2162,6 +2164,7 @@ fn overlay_layers<'a>(
             performance,
             reduced_motion,
             running,
+            pace: ctx.pace,
         });
     }
     if let Some((sets, events, particle_performance, particle_reduced)) = particles {
@@ -2170,7 +2173,8 @@ fn overlay_layers<'a>(
             events,
             performance: particle_performance,
             reduced_motion: particle_reduced,
-            running: animation_running(particle_performance, ctx.plays),
+            running: animation_running(particle_performance, ctx.plays) && ctx.pace.runs(),
+            pace: ctx.pace,
             depth: Depth::Over,
         });
     }

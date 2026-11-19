@@ -1,6 +1,6 @@
 # Theme port parity ledger
 
-Last audited against the owner Slint implementation on 2026-11-18. A row is
+Last audited against the owner Slint implementation on 2026-11-19. A row is
 **complete** only when the owner behavior reaches an iced consumer, its UI is
 in the corresponding settings workflow, and a focused test covers it. Parsing
 a token in `yapfast-core` does not make a row complete.
@@ -10,25 +10,42 @@ a token in `yapfast-core` does not make a row complete.
 - Owner package discovery and `Package::resolve_with`; persisted selection,
   options, content permission, Performance and Reduce motion in `layout.json`.
 - Base colours through the kit `Theme` conversion boundary, with Wired colours
-  as fallbacks. Package surface gradients and extra paints are retained in the
-  companion registry; main panes, Settings, menus, pickers, embeds, code,
-  labels, actions and selected rows consume them.
+  as fallbacks. Package surface gradients and all 30 `EXTRA_COLOURS` are
+  retained in the companion registry and consumed across main panes, Settings,
+  menus, pickers, embeds, code, labels, actions, composer/focus, selected/mentioned
+  rows, profile card buttons, tooltips, scrims and badges.
 - Shapes, radii, solid/dashed/dotted borders, shadows, all eight ordinary
   spacing tokens and the covered pane/list geometry.
 - Popup/hover/press motion under Performance and Reduce motion.
 - The separate Transitions between channels choice drives the resolved owner
   fade or dissolve transition over the retained previous chat surface.
-- Ordinary layout modes, the covered non-rotating list styling, top/tree rails,
-  grid and collapsed members, and content opt-in.
+- Ordinary layout modes, non-rotating list styling (including channel/member row
+  and header fonts, weights, fill and offset shadows; member title shadows,
+  rules and split count styling; rail label font), top/tree rails, grid and
+  collapsed members, and content opt-in.
 - Moving surface/list art, particles, fake glass, procedural overlays, icon and
-  sound replacement, media recolouring and dithering on the surfaces named
-  below. This does not claim the still-missing art subsections or surfaces.
+  sound replacement (including Hover/Press interface cues with 70 ms hover gap),
+  media recolouring and dithering across all non-deferred surfaces including
+  Tooltip art/glass.
+- Content opt-in following: `profiles` (`themes` and `effects`), illuminated
+  avatar `initials` (messages and optional member rows with hover reveal),
+  `embeds` (accent bar + accent-text link), and `activity` (accent LIVE pill
+  and card/progress styling).
+- Non-rotating event slots (`Row`, `Select`, `Hover`, `Click`, `NameHover`
+  decrypt on people/message authors/members, bounce `Reaction` stamp without
+  rotation), non-rotating declared `animations` (`Window` tint/opacity, `Accent`
+  colour tick, `Home`, `Unread`, `Mention`, `Typing`, `ChannelName`,
+  `ServerName`, `ProfileName`, `OwnAvatar`, phased `RailIcon`), and
+  `motion.unfocused` / window minimize & settings-coverage `Pace` gating.
 - A dedicated Settings → Themes destination; Appearance keeps quick choices
   and routes Browse/New/Edit into theme management.
-- Settings → Themes exposes the owner Installed, Marketplace, Add from URL
-  and Create tabs. Catalog search covers names, authors and descriptions;
-  URL/catalog fetches enter the same protected review with permissions,
-  notes and cost before installation.
+- Settings → Themes exposes Installed (with preview thumbnails, Remix line,
+  plain-language cost weight badge + expandable details, List vs 2-column
+  Gallery toggle, and empty-state navigation actions), Marketplace (2-column
+  gallery and empty-state actions), Add from URL, Create tabs and protected
+  install review.
+- Appearance → Readable text is persisted, restores stock reading faces across
+  controls/panels, and disables hover decrypt effects.
 - Installed packages support Apply/Turn off, 30-second Try/Keep/Revert,
   rollback and uninstall. Trials do not persist or install reviewed bytes
   until Keep, and invalid/deleted Back targets safely fall to stock.
@@ -48,39 +65,17 @@ a token in `yapfast-core` does not make a row complete.
   Its checked draft resolves through a temporary companion, so colours,
   shapes, fonts, picture art and glass preview live and unregister on Cancel.
 
-## Active parity work
+## Remaining edge-case differences (non-blocking / iced architectural boundaries)
 
-- Typography: checked package fonts now load into iced and the Theme boundary
-  carries all seven roles, size, weight, case and retained letter spacing.
-  Message bodies, names, conversation headers, channel rows and Settings
-  titles/labels consume it. Remaining ordinary text surfaces still need the
-  same trace and focused coverage.
-- Appearance → Readable text is persisted and restores stock reading faces;
-  remaining reading surfaces are being audited.
-- Installed previews, remix/cost capability detail, list/gallery views and
-  empty-state actions are still being expanded; ordinary metadata, refused
-  errors and lifecycle actions are present.
-- Surface art/glass expansion: Window, Rail, Sidebar, Chat, Members, Account,
-  Composer, ProfilePane, Header, Call, Aside, Settings, Menu, Actions, Embed,
-  Code, Label, Picker, Toast, RowSelected, Card, Dialog, CardOver, Footer,
-  Popout and Lightbox are wired. Tooltip art/glass remains; its ordinary
-  shape and colour tokens already apply.
-- Extra colours are retained; focus-ring, selection, toggle/knob-off,
-  scrollbar/track and the wired surface grounds now consume them. The
-  remaining control-specific extras are still being traced.
-- Text shadow, glow, outline and emboss draw behind selectable message
-  bodies, author/time pieces, headings, header text and member labels. Click
-  ripple, hover gloss and selected highlighter reach channel rows and cards;
-  foil reaches profile cards and member-grid tiles.
-
-## Missing owner UI/behavior
-
-- Whole ordinary renderer subsections still missing: reaction stamp, the
-  separate row highlighter and name-hover decrypt event slots, non-rotating
-  animation properties and `motion.unfocused`.
-- Remaining ordinary list/chrome/content fields recorded in the audit include
-  row/header fonts and focus detail, profile following, initials,
-  embed/activity following and hover/press sound cues.
+- `letter_spacing` is retained in `TypeStyle` (`yapfast-core` / kit boundary),
+  since iced 0.14's `text::Span` / `Paragraph` API does not expose per-run
+  tracking.
+- `RailTiles.{focus, focus_radius}` and `ChannelRows.{focus_outset, focus_radius}`
+  use iced's `mouse_area` row/tile model rather than Slint per-row Tab
+  `FocusScope` boxes; focus rings remain on controls, inputs and buttons.
+- Secondary dialog/admin sub-screens (`bot_modal`, `server_settings`, `signin`,
+  `mfa`, `channel_settings`) continue using stock helper text faces alongside
+  themed kit `form`/`controls` primitives.
 
 ## Deliberately deferred by owner instruction
 

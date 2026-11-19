@@ -521,18 +521,26 @@ fn banner_buttons<'a>(ctx: crate::ctx::Ctx<'a>, shown: &'a Shown) -> Element<'a,
     let look = &shown.look;
     let id = look.profile().id.clone();
     let round = |icon: Icon, label: &'static str, message: Option<Message>| {
+        let theme = ctx.look.theme;
         let enabled = message.is_some();
-        let rest = Color {
-            a: 0.5,
-            ..Color::BLACK
-        };
-        let lit = Color {
-            a: 0.7,
-            ..Color::BLACK
-        };
+        let rest = theme.token_colour(
+            "card-button",
+            Color {
+                a: 0.5,
+                ..Color::BLACK
+            },
+        );
+        let lit = theme.token_colour(
+            "card-button-hover",
+            Color {
+                a: 0.7,
+                ..Color::BLACK
+            },
+        );
+        let icon_ink = theme.token_colour("card-button-icon", Color::WHITE);
         let glyph = ctx
             .look
-            .glyph(icon, 18, Color::WHITE)
+            .glyph(icon, 18, icon_ink)
             .opacity(if enabled { 1.0 } else { 0.5 });
         let face = button(glyph.boxed(32))
             .padding(0)
@@ -582,13 +590,23 @@ pub(crate) fn profile_name<'a>(
     size: f32,
     ink: Color,
 ) -> Element<'a, Message> {
-    styled_name(ctx, shown, size).unwrap_or_else(|| {
+    let name: Element<'a, Message> = styled_name(ctx, shown, size).unwrap_or_else(|| {
         text(shown.look.profile().name.clone())
-            .size(size)
-            .font(BOLD)
+            .size(theme_size(ctx, size))
+            .font(ctx.look.theme.font("names", BOLD))
             .color(ink)
             .into()
-    })
+    });
+    crate::theme_effects::slot(
+        name,
+        ctx,
+        yapfast_core::themes::package::Slot::ProfileName,
+        None,
+    )
+}
+
+fn theme_size(ctx: crate::ctx::Ctx<'_>, stock: f32) -> f32 {
+    ctx.look.theme.type_size("names", stock)
 }
 
 /// The name in its style, if it has one.
@@ -731,12 +749,14 @@ fn profile_actions<'a>(
         return None;
     }
     let ink = inks.ink;
-    let (rest, lit) = (Color { a: 0.12, ..ink }, Color { a: 0.2, ..ink });
+    let rest = theme.token_colour("card-button", Color { a: 0.12, ..ink });
+    let lit = theme.token_colour("card-button-hover", Color { a: 0.2, ..ink });
+    let btn_ink = theme.token_colour("card-button-icon", ink);
     let mut row = row![].spacing(8).align_y(Alignment::Center);
     if let Some((icon, label, message)) = look.offer.button(&id) {
         let accept = look.offer == Offer::Accept;
         let (accent, on_accent) = (theme.accent, theme.on_accent);
-        let face_ink = if accept { on_accent } else { ink };
+        let face_ink = if accept { on_accent } else { btn_ink };
         let enabled = message.is_some();
         row = row.push(
             button(
@@ -773,7 +793,7 @@ fn profile_actions<'a>(
         );
     }
     let round = |icon: Icon, message: Message| {
-        button(ctx.look.glyph(icon, 18, ink).boxed(32))
+        button(ctx.look.glyph(icon, 18, btn_ink).boxed(32))
             .padding(0)
             .width(32)
             .height(32)

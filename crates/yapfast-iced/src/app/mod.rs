@@ -195,6 +195,7 @@ pub struct App {
     /// the data folder offers.
     pub theme: Theme,
     pub themes: Themes,
+    pub accent_started: std::time::Instant,
     /// The sign-in screen's fields; the listeners of the backend's events
     /// and of linking's progress, which stop when dropped.
     pub sign_in: SignIn,
@@ -223,6 +224,7 @@ impl App {
         let themes = Themes::read_sized(client.root(), &layout, size);
         let theme = themes.shown();
         let theme_icons = themes.icons(&theme.id);
+        crate::themes::register_cue_handler();
         themes.apply_sounds(&theme.id);
         let (fitter, fitted) = crate::pictures::Fitter::new();
         let mut client = client;
@@ -322,12 +324,14 @@ impl App {
             forum_post: Default::default(),
             theme,
             themes,
+            accent_started: std::time::Instant::now(),
             sign_in: SignIn::default(),
             backend_events: None,
             linking: None,
             mfa: mfa::Mfa::default(),
         };
         crate::window_bar::fit_window(&mut app);
+        app.sync_cues();
         app.follow_popups();
         let talk = crate::keybinds::watch_keybinds(&mut app);
         if app.layout.voice.noise_suppression != yapfast_core::noise::Suppressor::Off {
@@ -393,6 +397,14 @@ impl App {
         // with it.
         crate::window_bar::fit_window(self);
         task
+    }
+
+    pub(crate) fn sync_cues(&self) {
+        self.themes.sync_cue_runtime(
+            &self.theme.id,
+            interface_cue_allowed(self.shell.focused, self.client.state().do_not_disturb()),
+            self.client.state().voice.speaker.clone(),
+        );
     }
 
     /// Plays one installed theme interface cue only while this window is
@@ -523,6 +535,23 @@ impl App {
                     self.show_theme(self.themes.shown());
                 } else {
                     self.dirty = true;
+                }
+                Task::none()
+            }
+            Message::ThemeAccentTick(now) => {
+                let elapsed_ms = now
+                    .saturating_duration_since(self.accent_started)
+                    .as_secs_f32()
+                    * 1000.0;
+                if let Some((accent, _)) = crate::theme_effects::accent_animation(
+                    &self.themes,
+                    &self.theme.id,
+                    elapsed_ms,
+                    self.ctx().pace,
+                    self.ctx().plays,
+                ) {
+                    self.theme.accent = accent;
+                    self.theme = self.theme.clone().worked_out();
                 }
                 Task::none()
             }

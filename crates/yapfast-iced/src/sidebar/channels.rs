@@ -393,6 +393,14 @@ impl<'a> super::View<'a> {
         } else {
             ink
         };
+        let header_font = crate::themes::list_font(
+            theme,
+            headers.and_then(|h| h.font),
+            "labels",
+            headers.and_then(|h| h.weight),
+            SEMIBOLD,
+        );
+        let header_shadow = crate::themes::offset_shadow(headers.and_then(|h| h.shadow));
         let mut words = row![
             elide(name)
                 .size(
@@ -400,8 +408,9 @@ impl<'a> super::View<'a> {
                         .and_then(|headers| headers.size)
                         .unwrap_or_else(|| theme.type_size("labels", 14.0)),
                 )
-                .font(theme.font("labels", SEMIBOLD))
+                .font(header_font)
                 .color(ink)
+                .light(header_shadow)
         ]
         .spacing(4)
         .align_y(Alignment::Center);
@@ -442,11 +451,15 @@ impl<'a> super::View<'a> {
         let height = headers
             .and_then(|headers| headers.height)
             .unwrap_or(HEADING);
+        let fill_width = headers.is_some_and(|h| h.fill);
+        let inset_left = headers
+            .and_then(|headers| headers.inset)
+            .unwrap_or(if fill_width { 6.0 } else { 16.0 });
         let body: Element<'a, Message> = container(face)
             .padding(Padding {
-                left: headers.and_then(|headers| headers.inset).unwrap_or(16.0),
-                right: 8.0,
-                top: 17.0,
+                left: inset_left,
+                right: if fill_width { 6.0 } else { 8.0 },
+                top: if fill_width { 4.0 } else { 17.0 },
                 bottom: 0.0,
             })
             .height(height)
@@ -832,10 +845,29 @@ impl<'a> super::View<'a> {
             &room.name,
         );
         let name = crate::themes::list_case(list.and_then(|rows| rows.case), &marked);
+        let row_role = list
+            .and_then(|rows| rows.font)
+            .map_or("body", yapfast_core::themes::lists::FontRole::name);
+        let row_font = crate::themes::list_font(
+            theme,
+            list.and_then(|rows| rows.font),
+            "body",
+            list.and_then(|rows| rows.weight),
+            MEDIUM,
+        );
+        let selected_shadow = if room.selected {
+            crate::themes::offset_shadow(
+                list.and_then(|rows| rows.ink.selected_shadow)
+                    .map(|c| (c, 0.0, 1.0)),
+            )
+        } else {
+            crate::piece::TextLight::default()
+        };
         let name = elide(name.into_owned())
-            .size(theme.type_size("body", list.and_then(|rows| rows.size).unwrap_or(15.0)))
-            .font(theme.font("body", MEDIUM))
-            .color(ink);
+            .size(theme.type_size(row_role, list.and_then(|rows| rows.size).unwrap_or(15.0)))
+            .font(row_font)
+            .color(ink)
+            .light(selected_shadow);
         let mut name = column![name].width(Length::Fill);
         if room.selected
             && let Some(underline) = list.and_then(|rows| rows.selected.underline)
@@ -862,10 +894,16 @@ impl<'a> super::View<'a> {
         {
             let count = room.people.len().to_string();
             let words = yapfast_core::themes::chrome::fill(&meta.voice, &[("n", count.as_str())]);
+            let meta_role = meta
+                .font
+                .map_or("small", yapfast_core::themes::lists::FontRole::name);
             face = face.push(
                 text(words)
-                    .size(meta.size.unwrap_or_else(|| theme.type_size("small", 11.0)))
-                    .font(theme.font("small", crate::fonts::REGULAR))
+                    .size(
+                        meta.size
+                            .unwrap_or_else(|| theme.type_size(meta_role, 11.0)),
+                    )
+                    .font(theme.font(meta_role, crate::fonts::REGULAR))
                     .color(meta.colour.map(crate::themes::argb).unwrap_or(theme.muted)),
             );
         }
@@ -958,7 +996,9 @@ impl<'a> super::View<'a> {
             } else {
                 theme.faint
             }
-        } else if room.selected || room.unread {
+        } else if room.selected {
+            theme.token_colour("row-selected-text", theme.text)
+        } else if room.unread {
             theme.text
         } else if pointed {
             theme.secondary

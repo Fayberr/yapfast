@@ -316,7 +316,11 @@ fn sharing_line<'a>(
     let theme = ctx.look.theme;
     let live = sharing.phase == voice::SharePhase::Live;
     let lead: Element<'a, Message> = if live {
-        container(controls::live_pill(theme, None))
+        let activity_themed = ctx
+            .themes
+            .content(&theme.id, ctx.layout.theme_content.contains(&theme.id))
+            .is_some_and(|c| c.activity == yapfast_core::themes::content::Follow::Theme);
+        container(controls::live_pill_in(theme, activity_themed, None))
             .padding(Padding {
                 left: 20.0,
                 ..Padding::ZERO

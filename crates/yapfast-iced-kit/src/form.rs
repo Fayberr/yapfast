@@ -166,7 +166,7 @@ pub fn new_tag<'a, M: Clone + 'a>(theme: &crate::theme::Theme) -> Element<'a, M>
     container(
         text("NEW")
             .size(10)
-            .font(crate::fonts::BOLD)
+            .font(theme.font("small", crate::fonts::BOLD))
             .color(theme.on_accent),
     )
     .padding([0, 5])
@@ -632,11 +632,12 @@ pub fn options<'a, M: Clone + 'a>(
         });
         let words = column![
             text(choice.title)
-                .size(15)
-                .font(SEMIBOLD)
+                .size(theme.type_size("labels", 15.0))
+                .font(theme.font("labels", SEMIBOLD))
                 .color(faded(choice.colour.unwrap_or(theme.text))),
             text(choice.description)
-                .size(13)
+                .size(theme.type_size("small", 13.0))
+                .font(theme.font("small", REGULAR))
                 .color(faded(theme.secondary))
                 .width(Length::Fill),
         ]
@@ -673,11 +674,15 @@ pub fn readout<'a, M: Clone + 'a>(
 ) -> container::Container<'a, M> {
     let value = value.into();
     let (shown, ink, font) = if value.is_empty() {
-        (empty.into(), theme.muted, iced::Font::default())
+        (
+            empty.into(),
+            theme.token_colour("placeholder", theme.muted),
+            theme.font("body", REGULAR),
+        )
     } else {
-        (value, theme.text, SEMIBOLD)
+        (value, theme.text, theme.font("labels", SEMIBOLD))
     };
-    let (sunken, accent) = (theme.sunken, theme.accent);
+    let (sunken, accent) = (theme.sunken, theme.token_colour("focus-ring", theme.accent));
     container(
         text(shown)
             .size(14)
@@ -995,7 +1000,7 @@ pub fn area<'a, M: Clone + 'a>(
     let colors = crate::field::Colors {
         ground: theme.sunken,
         text: if enabled { theme.text } else { theme.muted },
-        placeholder: theme.muted,
+        placeholder: theme.token_colour("placeholder", theme.muted),
         selection: theme.token_colour("selection", theme.selection),
     };
     let field = crate::field::Field::new(
@@ -1006,12 +1011,16 @@ pub fn area<'a, M: Clone + 'a>(
         colors,
     )
     .enabled(enabled)
-    .size(14.0)
+    .size(theme.type_size("body", 14.0))
+    .font(theme.font("body", REGULAR))
     .line_height(AREA_LINE)
     .lines(AREA_LINES)
     .padding(iced::Padding::from([8.0, 10.0]))
     .radius(AREA_RADIUS)
-    .ring(crate::style::faded(theme.accent, 0.8));
+    .ring(crate::style::faded(
+        theme.token_colour("focus-ring", theme.accent),
+        0.8,
+    ));
     let sunken = theme.sunken;
     let count = if left < 0 {
         text(format!("Too long by {}", -left))

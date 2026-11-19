@@ -54,6 +54,10 @@ pub(super) fn embed<'a>(
     laid: &'a EmbedText,
 ) -> Element<'a, Message> {
     let theme = ctx.look.theme;
+    let theme_embeds = ctx
+        .themes
+        .content(&theme.id, ctx.layout.theme_content.contains(&theme.id))
+        .is_some_and(|c| c.embeds == yapfast_core::themes::content::Follow::Theme);
     let small = |size: f32, ink: Color| Look {
         size,
         line_height: (size * 1.3).round(),
@@ -88,7 +92,12 @@ pub(super) fn embed<'a>(
         card = card.push(if embed.url.is_empty() {
             Element::from(title.color(theme.text))
         } else {
-            button(title.color(theme.link))
+            let link_ink = if theme_embeds {
+                theme.accent_text()
+            } else {
+                theme.link
+            };
+            button(title.color(link_ink))
                 .padding(0)
                 .on_press(Message::Link(embed.url.clone(), Point::ORIGIN))
                 .style(|_, _| button::Style::default())
@@ -176,7 +185,11 @@ pub(super) fn embed<'a>(
             ctx, index, message, at, shot,
         ));
     }
-    let bar_ink = embed.color.map_or(theme.edge, hex);
+    let bar_ink = if theme_embeds {
+        theme.accent
+    } else {
+        embed.color.map_or(theme.edge, hex)
+    };
     let surface = yapfast_core::themes::package::art::ArtSurface::Embed;
     let decorated =
         ctx.themes.decorates(&theme.id, surface) || theme.package_paint("embed").is_some();

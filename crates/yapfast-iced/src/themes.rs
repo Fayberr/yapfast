@@ -55,11 +55,20 @@ pub struct Installed {
     pub choices: options::Choices,
     /// The revision retained by core for Roll back, when there is one.
     pub previous: Option<String>,
+    /// What this theme remixes, if named in `theme.json`.
+    pub based_on: Option<String>,
+    /// Core's cost summary line for Settings → Themes.
+    pub cost: String,
+    /// Decoded thumbnail of `package.preview[0]`, if present and readable.
+    pub preview: Option<iced::advanced::image::Handle>,
+    /// Resolved palette for miniature colour previews when no preview image exists.
+    pub palette_preview: palette::Theme,
     folder: PathBuf,
     package: package::Package,
     shown: Theme,
     metrics: yapfast_iced_kit::theme::Metrics,
     motion: package::Motion,
+    animations: Vec<package::Animation>,
     icons: HashMap<String, yapfast_iced_kit::icons::Replacement>,
     sounds: ThemeSounds,
     sound_prefs: SoundPrefs,
@@ -67,6 +76,59 @@ pub struct Installed {
     content: content::Content,
     art: ThemeArt,
     layout: theme_layout::Layout,
+}
+
+/// How fast theme motion may run given window visibility, focus, Settings
+/// coverage, Performance and `motion.unfocused`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Pace {
+    #[default]
+    Full,
+    Slow,
+    Still,
+}
+
+impl Pace {
+    pub const SLOW_FPS: u64 = 15;
+
+    pub fn runs(self) -> bool {
+        self != Self::Still
+    }
+
+    pub fn cap_fps(self, fps: u64) -> u64 {
+        match self {
+            Self::Full => fps,
+            Self::Slow => fps.min(Self::SLOW_FPS),
+            Self::Still => 0,
+        }
+    }
+}
+
+pub fn pace_of(
+    shown: bool,
+    minimized: bool,
+    focused: bool,
+    covered: bool,
+    performance: Performance,
+    reduced: bool,
+    unfocused: package::Unfocused,
+) -> Pace {
+    if !shown || minimized || reduced || performance == Performance::Light {
+        return Pace::Still;
+    }
+    if focused && covered {
+        return Pace::Slow;
+    }
+    if focused {
+        return Pace::Full;
+    }
+    match (performance, unfocused) {
+        (Performance::Balanced | Performance::Light, _) | (_, package::Unfocused::Still) => {
+            Pace::Still
+        }
+        (Performance::Full, package::Unfocused::Slow) => Pace::Slow,
+        (Performance::Full, package::Unfocused::Full) => Pace::Full,
+    }
 }
 
 /// A person's choices for one installed theme's sound replacements.
@@ -246,15 +308,27 @@ pub struct TrialInfo {
     pub seconds: u64,
 }
 
-fn resolve_package(
+struct ResolveSource {
     id: String,
     folder: PathBuf,
     package: package::Package,
     previous: Option<String>,
+    cost: String,
+}
+
+fn resolve_package(
+    source: ResolveSource,
     preferred: Mode,
     layout: &Layout,
     window: (u32, u32),
 ) -> Result<Installed, String> {
+    let ResolveSource {
+        id,
+        folder,
+        package,
+        previous,
+        cost,
+    } = source;
     // Until the mode option is exposed, prefer dark, as the old themes page
     // did when the desktop did not report a light preference.
     let choices = layout.theme_options.get(&id).cloned().unwrap_or_default();
@@ -277,8 +351,14 @@ fn resolve_package(
         window,
     );
     metrics.decorations = art.decorations();
-    shown.register_metrics(metrics.clone());
+    metrics.tooltip = tooltip_surface(&art);
     let sound_prefs = layout.theme_sounds.get(&id).copied().unwrap_or_default();
+    let cues_on = sound_prefs.interface && sound_prefs.volume > 0;
+    metrics.hover_cue = cues_on && sounds.cues.contains_key(&media::SoundSlot::Hover);
+    metrics.press_cue = cues_on && sounds.cues.contains_key(&media::SoundSlot::Press);
+    shown.register_metrics(metrics.clone());
+    let based_on = package.based_on.clone();
+    let preview = installed_preview(&folder, &package.preview);
     Ok(Installed {
         id,
         name: package.name.clone(),
@@ -290,11 +370,16 @@ fn resolve_package(
         options: package.options.clone(),
         choices,
         previous,
+        based_on,
+        cost,
+        preview,
+        palette_preview: palette,
         folder,
         package,
         shown,
         metrics,
         motion: resolved.motion,
+        animations: resolved.animations,
         icons,
         sounds,
         sound_prefs,
@@ -438,11 +523,22 @@ impl Themes {
                     .previous
                     .as_ref()
                     .map(|previous| previous.rev.clone());
+                let cost = if !installed.entry.cost.is_empty() {
+                    installed.entry.cost.clone()
+                } else {
+                    check::Files::read(&installed.folder)
+                        .ok()
+                        .map(|files| check::check(&files, Strictness::Install).cost.text())
+                        .unwrap_or_default()
+                };
                 match resolve_package(
-                    id,
-                    installed.folder,
-                    installed.package,
-                    previous,
+                    ResolveSource {
+                        id,
+                        folder: installed.folder,
+                        package: installed.package,
+                        previous,
+                        cost,
+                    },
                     Mode::Dark,
                     layout,
                     window,
@@ -507,10 +603,13 @@ impl Themes {
                     }
                     let package = report.package.expect("a passed check has its package");
                     resolve_package(
-                        custom.id.clone(),
-                        folder,
-                        package,
-                        None,
+                        ResolveSource {
+                            id: custom.id.clone(),
+                            folder,
+                            package,
+                            previous: None,
+                            cost: String::new(),
+                        },
                         Mode::Dark,
                         layout,
                         window,
@@ -728,10 +827,13 @@ impl Themes {
         }
         let package = report.package.expect("a passed check has its package");
         let resolved = resolve_package(
-            CREATOR_PREVIEW_ID.to_owned(),
-            folder.to_owned(),
-            package,
-            None,
+            ResolveSource {
+                id: CREATOR_PREVIEW_ID.to_owned(),
+                folder: folder.to_owned(),
+                package,
+                previous: None,
+                cost: report.cost.text(),
+            },
             self.system_mode,
             layout,
             self.window,
@@ -869,10 +971,13 @@ impl Themes {
 
         let name = fetched.package().name.clone();
         let package = resolve_package(
-            TRIAL_ID.to_owned(),
-            folder.path().to_owned(),
-            fetched.package().clone(),
-            None,
+            ResolveSource {
+                id: TRIAL_ID.to_owned(),
+                folder: folder.path().to_owned(),
+                package: fetched.package().clone(),
+                previous: None,
+                cost: fetched.report.cost.text(),
+            },
             self.system_mode,
             layout,
             self.window,
@@ -1008,6 +1113,8 @@ impl Themes {
                 style,
                 window,
             ));
+            installed.metrics.tooltip = tooltip_surface(&installed.art);
+            installed.shown.register_metrics(installed.metrics.clone());
             changed = true;
         }
         changed
@@ -1067,6 +1174,7 @@ impl Themes {
                 })
                 .flatten(),
         );
+        self.update_cue_sounds(id);
     }
 
     pub fn sound_prefs(&self, id: &str) -> Option<SoundPrefs> {
@@ -1078,6 +1186,12 @@ impl Themes {
             return false;
         };
         installed.sound_prefs = prefs;
+        let cues_on = prefs.interface && prefs.volume > 0;
+        installed.metrics.hover_cue =
+            cues_on && installed.sounds.cues.contains_key(&media::SoundSlot::Hover);
+        installed.metrics.press_cue =
+            cues_on && installed.sounds.cues.contains_key(&media::SoundSlot::Press);
+        installed.shown.register_metrics(installed.metrics.clone());
         true
     }
 
@@ -1100,6 +1214,47 @@ impl Themes {
         let cue = cue.sounds.cues.get(&slot)?;
         let index = NEXT_CUE.fetch_add(1, Ordering::Relaxed) % cue.samples.len();
         Some((cue.samples[index].clone(), cue.volume * volume))
+    }
+
+    fn update_cue_sounds(&self, id: &str) {
+        let installed = self.package(id);
+        let (hover, press) =
+            match installed.filter(|p| p.sound_prefs.interface && p.sound_prefs.volume > 0) {
+                Some(p) => {
+                    let scale = p.sound_prefs.volume.min(100) as f32 / 100.0;
+                    let pick = |slot| {
+                        p.sounds.cues.get(&slot).map(|cue| SoundCue {
+                            samples: cue.samples.clone(),
+                            volume: cue.volume * scale,
+                        })
+                    };
+                    (pick(media::SoundSlot::Hover), pick(media::SoundSlot::Press))
+                }
+                None => (None, None),
+            };
+        if let Ok(mut rt) = cue_runtime().lock() {
+            rt.hover = hover;
+            rt.press = press;
+        }
+    }
+
+    pub fn sync_cue_runtime(&self, id: &str, allowed: bool, speaker: Option<String>) {
+        if let Ok(mut rt) = cue_runtime().lock() {
+            rt.allowed = allowed;
+            rt.speaker = speaker;
+        }
+        self.update_cue_sounds(id);
+    }
+
+    pub fn animations(&self, id: &str) -> &[package::Animation] {
+        self.package(id)
+            .map_or(&[], |installed| installed.animations.as_slice())
+    }
+
+    pub fn unfocused(&self, id: &str) -> package::Unfocused {
+        self.package(id)
+            .and_then(|installed| installed.motion.unfocused)
+            .unwrap_or_default()
     }
 
     pub fn chrome(&self, id: &str) -> Option<&chrome::Chrome> {
@@ -1354,10 +1509,16 @@ fn apply_resolution(
     );
     let art = theme_art(&installed.folder, &resolved, performance, reduced, window);
     metrics.decorations = art.decorations();
+    metrics.tooltip = tooltip_surface(&art);
+    let cues_on = installed.sound_prefs.interface && installed.sound_prefs.volume > 0;
+    metrics.hover_cue = cues_on && sounds.cues.contains_key(&media::SoundSlot::Hover);
+    metrics.press_cue = cues_on && sounds.cues.contains_key(&media::SoundSlot::Press);
     shown.register_metrics(metrics.clone());
     installed.shown = shown;
     installed.metrics = metrics;
+    installed.palette_preview = palette;
     installed.motion = resolved.motion;
+    installed.animations = resolved.animations;
     installed.icons = icons;
     installed.sounds = sounds;
     installed.chrome = resolved.chrome;
@@ -2040,6 +2201,9 @@ fn metrics(
         motion: motion(&resolved.motion, performance, reduced),
         types: HashMap::new(),
         readable_text: false,
+        tooltip: None,
+        hover_cue: false,
+        press_cue: false,
     }
 }
 
@@ -2153,6 +2317,11 @@ fn motion(
         package::Press::Scale => Press::Scale,
         package::Press::Sink => Press::Sink,
     };
+    let unfocused = match motion.unfocused.unwrap_or_default() {
+        package::Unfocused::Full => yapfast_iced_kit::theme::Unfocused::Full,
+        package::Unfocused::Slow => yapfast_iced_kit::theme::Unfocused::Slow,
+        package::Unfocused::Still => yapfast_iced_kit::theme::Unfocused::Still,
+    };
     yapfast_iced_kit::theme::Motion {
         quick,
         popup: millis(motion.popup, 100.0),
@@ -2169,7 +2338,148 @@ fn motion(
         press,
         open,
         close,
+        unfocused,
     }
+}
+
+fn installed_preview(folder: &Path, preview: &[PathBuf]) -> Option<iced::advanced::image::Handle> {
+    preview.iter().find_map(|rel| {
+        let bytes = std::fs::read(folder.join(rel)).ok()?;
+        crate::theme_remote::decode_preview(&bytes).map(|p| p.handle)
+    })
+}
+
+fn tooltip_surface(art: &ThemeArt) -> Option<yapfast_iced_kit::theme::TooltipSurface> {
+    use yapfast_iced_kit::theme::{TooltipFit, TooltipGlass, TooltipLayer, TooltipSurface};
+    let mut layers = Vec::new();
+    if let Some(surface_layers) = art.surfaces.get(&ArtSurface::Tooltip) {
+        for item in surface_layers {
+            let layer = &item.layer;
+            let period_ms = layer
+                .frames
+                .filter(|f| f.count > 1)
+                .map_or(0.0, |f| f.period.max(100.0));
+            let fit = match layer.fit {
+                art::Fit::Cover => TooltipFit::Cover,
+                art::Fit::Contain => TooltipFit::Contain,
+                art::Fit::Tile => TooltipFit::Tile,
+                art::Fit::Stretch => TooltipFit::Stretch,
+            };
+            layers.push(TooltipLayer {
+                handle: item.handle.clone(),
+                frames: item.frames.clone(),
+                period_ms,
+                width: item.width,
+                height: item.height,
+                opacity: layer.opacity,
+                scale: layer.scale,
+                position: layer.position,
+                fit,
+                drift: layer.drift,
+                size: layer.size,
+                moves: !art.reduced_motion
+                    && art.performance != Performance::Light
+                    && (art.performance == Performance::Full || !layer.heavy)
+                    && (layer.frames.is_some_and(|f| f.count > 1)
+                        || layer.drift.0 != 0.0
+                        || layer.drift.1 != 0.0),
+            });
+        }
+    }
+    let glass = art.glass.as_ref().and_then(|pane| {
+        if !pane.style.surfaces.contains(&ArtSurface::Tooltip) {
+            return None;
+        }
+        let s = &pane.style;
+        Some(TooltipGlass {
+            handle: pane.handle.clone(),
+            window: pane.window,
+            ground: argb(pane.ground(ArtSurface::Tooltip)),
+            opacity: s.opacity,
+            radius: s.radius,
+            rim: s.rim.map(|(c, w)| (argb(c), w)),
+            highlight: s.highlight.map(argb),
+            inset: s
+                .inset
+                .as_ref()
+                .map(|shadow| (argb(shadow.colour), shadow.blur)),
+            gap: s.gap,
+        })
+    });
+    if layers.is_empty() && glass.is_none() {
+        return None;
+    }
+    let reserve = art
+        .reserves
+        .get(&ArtSurface::Tooltip)
+        .map(|r| [r.top, r.right, r.bottom, r.left]);
+    Some(TooltipSurface {
+        layers,
+        glass,
+        reserve,
+    })
+}
+
+const HOVER_GAP: Duration = Duration::from_millis(70);
+
+#[derive(Default)]
+struct CueRuntime {
+    hover: Option<SoundCue>,
+    press: Option<SoundCue>,
+    speaker: Option<String>,
+    allowed: bool,
+    last_hover: Option<Instant>,
+}
+
+static CUE_RUNTIME: std::sync::OnceLock<Mutex<CueRuntime>> = std::sync::OnceLock::new();
+
+fn cue_runtime() -> &'static Mutex<CueRuntime> {
+    CUE_RUNTIME.get_or_init(|| Mutex::new(CueRuntime::default()))
+}
+
+pub fn register_cue_handler() {
+    yapfast_iced_kit::theme::set_cue_handler(|event| {
+        let (samples, volume, speaker) = {
+            let Ok(mut rt) = cue_runtime().lock() else {
+                return;
+            };
+            if !rt.allowed {
+                return;
+            }
+            let now = Instant::now();
+            let cue = match event {
+                yapfast_iced_kit::theme::CueEvent::Hover => {
+                    if rt
+                        .last_hover
+                        .is_some_and(|last| now.saturating_duration_since(last) < HOVER_GAP)
+                    {
+                        return;
+                    }
+                    let cue = rt.hover.as_ref().map(|c| {
+                        let idx = NEXT_CUE.fetch_add(1, Ordering::Relaxed) % c.samples.len();
+                        (c.samples[idx].clone(), c.volume)
+                    });
+                    if cue.is_some() {
+                        rt.last_hover = Some(now);
+                    }
+                    cue
+                }
+                yapfast_iced_kit::theme::CueEvent::Press => rt.press.as_ref().map(|c| {
+                    let idx = NEXT_CUE.fetch_add(1, Ordering::Relaxed) % c.samples.len();
+                    (c.samples[idx].clone(), c.volume)
+                }),
+            };
+            let Some((samples, volume)) = cue else {
+                return;
+            };
+            (samples, volume, rt.speaker.clone())
+        };
+        yapfast_core::sounds::play_decoded(
+            samples,
+            volume * yapfast_core::volume::speakers(),
+            speaker.as_deref(),
+        );
+    });
 }
 
 pub(crate) fn argb(colour: u32) -> Color {
@@ -2190,6 +2500,31 @@ pub(crate) fn list_case(
         Some(Case::Upper) => Cow::Owned(words.to_uppercase()),
         Some(Case::Lower) => Cow::Owned(words.to_lowercase()),
         _ => Cow::Borrowed(words),
+    }
+}
+
+pub(crate) fn list_font(
+    theme: &Theme,
+    role: Option<yapfast_core::themes::lists::FontRole>,
+    fallback_role: &'static str,
+    weight: Option<f32>,
+    stock: iced::Font,
+) -> iced::Font {
+    let role = role.map_or(fallback_role, yapfast_core::themes::lists::FontRole::name);
+    let weighted = match weight.map(|w| w.round() as u16) {
+        Some(w) if w >= 650 => crate::fonts::BOLD,
+        Some(w) if w >= 550 => crate::fonts::SEMIBOLD,
+        Some(w) if w >= 450 => crate::fonts::MEDIUM,
+        Some(_) => crate::fonts::REGULAR,
+        None => stock,
+    };
+    theme.font(role, weighted)
+}
+
+pub(crate) fn offset_shadow(shadow: Option<(u32, f32, f32)>) -> crate::piece::TextLight {
+    crate::piece::TextLight {
+        shadow: shadow.map(|(colour, x, y)| (argb(colour), iced::Vector::new(x, y))),
+        ..Default::default()
     }
 }
 
@@ -3100,5 +3435,171 @@ mod tests {
         );
         assert_eq!(light.procedural_overlays.len(), 1);
         assert!(light.chat_procedural_overlays.is_empty());
+    }
+
+    #[test]
+    fn pace_tooltip_cues_extra_colours_and_list_typography() {
+        use yapfast_core::themes::lists::{FontRole, HoverGround};
+        let _ = HoverGround::Hover;
+        assert_eq!(
+            pace_of(
+                false,
+                false,
+                true,
+                false,
+                Performance::Full,
+                false,
+                package::Unfocused::Full
+            ),
+            Pace::Still
+        );
+        assert_eq!(
+            pace_of(
+                true,
+                true,
+                true,
+                false,
+                Performance::Full,
+                false,
+                package::Unfocused::Full
+            ),
+            Pace::Still
+        );
+        assert_eq!(
+            pace_of(
+                true,
+                false,
+                true,
+                true,
+                Performance::Full,
+                false,
+                package::Unfocused::Full
+            ),
+            Pace::Slow
+        );
+        assert_eq!(
+            pace_of(
+                true,
+                false,
+                false,
+                false,
+                Performance::Full,
+                false,
+                package::Unfocused::Slow
+            ),
+            Pace::Slow
+        );
+        assert_eq!(
+            pace_of(
+                true,
+                false,
+                false,
+                false,
+                Performance::Full,
+                false,
+                package::Unfocused::Full
+            ),
+            Pace::Full
+        );
+        assert_eq!(
+            pace_of(
+                true,
+                false,
+                false,
+                false,
+                Performance::Balanced,
+                false,
+                package::Unfocused::Full
+            ),
+            Pace::Still
+        );
+        assert_eq!(Pace::Slow.cap_fps(60), Pace::SLOW_FPS);
+        assert_eq!(Pace::Still.cap_fps(60), 0);
+
+        let package = yapfast_core::themes::Package::parse(
+            r##"{
+                "theme_api": 1,
+                "id": "dev.example.parity",
+                "name": "Parity",
+                "version": "1.0.0",
+                "based_on": "Bonfire",
+                "colours": {
+                    "accent-text": "#ffe082",
+                    "on-tooltip": "#112233",
+                    "composer-focus": "#445566",
+                    "row-selected-text": "#778899",
+                    "card-button": "#101010",
+                    "mention-chip": "#223344",
+                    "scrim": "#010203"
+                },
+                "art": { "surfaces": { "tooltip": { "texture": "paper", "reserve": { "left": 8, "right": 8 } } } },
+                "motion": { "unfocused": "still" },
+                "variants": { "dark": { "base": "yap" } }
+            }"##,
+        )
+        .expect("package");
+        let resolved = package
+            .resolve_with(Mode::Dark, &yapfast_core::themes::options::Choices::new())
+            .expect("resolved");
+        let shown = theme("installed:dev.example.parity", &resolved_palette(&resolved));
+        let mut kit_metrics = metrics(&resolved, Performance::Full, false);
+        let art = theme_art(
+            Path::new("."),
+            &resolved,
+            Performance::Full,
+            false,
+            (1024, 768),
+        );
+        kit_metrics.tooltip = tooltip_surface(&art);
+        kit_metrics.hover_cue = true;
+        shown.register_metrics(kit_metrics);
+
+        assert_eq!(
+            shown.motion().unfocused,
+            yapfast_iced_kit::theme::Unfocused::Still
+        );
+        assert!(shown.tooltip_surface().is_some());
+        assert_eq!(
+            shown.tooltip_surface().and_then(|t| t.reserve),
+            Some([0.0, 8.0, 0.0, 8.0])
+        );
+        assert!(shown.has_hover_cue());
+        assert!(!shown.has_press_cue());
+        assert_eq!(shown.accent_text(), argb(0xffff_e082));
+        assert_eq!(
+            shown.token_colour("on-tooltip", Color::BLACK),
+            argb(0xff11_2233)
+        );
+        assert_eq!(
+            shown.token_colour("composer-focus", Color::BLACK),
+            argb(0xff44_5566)
+        );
+        assert_eq!(
+            shown.token_colour("row-selected-text", Color::BLACK),
+            argb(0xff77_8899)
+        );
+        assert_eq!(
+            shown.token_colour("card-button", Color::BLACK),
+            argb(0xff10_1010)
+        );
+        assert_eq!(
+            shown.token_colour("mention-chip", Color::BLACK),
+            argb(0xff22_3344)
+        );
+        assert_eq!(shown.token_colour("scrim", Color::BLACK), argb(0xff01_0203));
+
+        let font = list_font(
+            &shown,
+            Some(FontRole::Headings),
+            "body",
+            Some(700.0),
+            crate::fonts::REGULAR,
+        );
+        assert_eq!(font.weight, iced::font::Weight::Bold);
+        assert!(
+            offset_shadow(Some((0xffff_0000, 1.0, 2.0)))
+                .shadow
+                .is_some()
+        );
     }
 }

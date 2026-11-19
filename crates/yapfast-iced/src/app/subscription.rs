@@ -65,6 +65,16 @@ impl App {
             subscriptions
                 .push(iced::time::every(Duration::from_millis(250)).map(Message::ThemeTrialTick));
         }
+        let ctx = self.ctx();
+        if let Some((_, Some(every))) = crate::theme_effects::accent_animation(
+            &self.themes,
+            &self.theme.id,
+            0.0,
+            ctx.pace,
+            ctx.plays,
+        ) {
+            subscriptions.push(iced::time::every(every).map(Message::ThemeAccentTick));
+        }
         // A look at the releases every six hours while the check is on.
         if self.layout.prefs.check_for_updates {
             subscriptions.push(

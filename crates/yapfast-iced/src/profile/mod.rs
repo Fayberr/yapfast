@@ -626,6 +626,16 @@ pub fn profile_panel_view<'a>(ctx: crate::ctx::Ctx<'a>) -> Option<Element<'a, Me
 /// no theme, the avatar's dominant colour once it has arrived, as
 /// Discord tints it.
 pub(crate) fn banner_ground(ctx: crate::ctx::Ctx<'_>, shown: &Shown) -> Option<u32> {
+    let themed = ctx
+        .themes
+        .content(
+            &ctx.look.theme.id,
+            ctx.layout.theme_content.contains(&ctx.look.theme.id),
+        )
+        .is_some_and(|c| c.profiles.themes == yapfast_core::themes::content::Follow::Theme);
+    if themed {
+        return None;
+    }
     let profile = shown.look.profile();
     if shown.look.accent.is_some() || profile.banner.is_some() || profile.theme.is_some() {
         return shown.look.accent;
@@ -803,12 +813,20 @@ pub fn profile_pictures(ctx: crate::ctx::Ctx<'_>) -> Vec<String> {
 
 /// The profile's ink, ground and the rest, from its theme or Yapfast's.
 pub fn inks(ctx: crate::ctx::Ctx<'_>, look: &Look, mode: Mode) -> look::Inks {
+    let themed = ctx
+        .themes
+        .content(
+            &ctx.look.theme.id,
+            ctx.layout.theme_content.contains(&ctx.look.theme.id),
+        )
+        .is_some_and(|c| c.profiles.themes == yapfast_core::themes::content::Follow::Theme);
     let plain = if mode == Mode::Docked {
         ctx.look.theme.panel
     } else {
         ctx.look.theme.sidebar
     };
-    look::Inks::new(ctx.look.theme, look.profile().theme, plain)
+    let colors = (!themed).then_some(look.profile().theme).flatten();
+    look::Inks::new(ctx.look.theme, colors, plain)
 }
 
 /// Whether the profile panel shows beside the open DM.

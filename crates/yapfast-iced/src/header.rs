@@ -254,13 +254,18 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
         yapfast_core::themes::chrome::Place::Header,
         &header.name,
     );
-    let name = container(crate::theme_effects::label(
+    let name = container(crate::theme_effects::slot(
+        crate::theme_effects::label(
+            ctx,
+            yapfast_core::themes::package::art::TextRole::Headings,
+            theme.heading(&header_name).into_owned(),
+            theme.header_size(16.0),
+            theme.header_font(BOLD),
+            header_ink,
+        ),
         ctx,
-        yapfast_core::themes::package::art::TextRole::Headings,
-        theme.heading(&header_name).into_owned(),
-        theme.header_size(16.0),
-        theme.header_font(BOLD),
-        header_ink,
+        yapfast_core::themes::package::Slot::ChannelName,
+        None,
     ))
     .clip(true);
     head = head.push(if fills {
@@ -599,8 +604,8 @@ fn header_buttons<'a>(ctx: crate::ctx::Ctx<'a>) -> Vec<Element<'a, Message>> {
             row![
                 ctx.look.glyph(Icon::Users, 18, theme.muted),
                 text(header.members.as_str())
-                    .size(14)
-                    .font(MEDIUM)
+                    .size(theme.type_size("labels", 14.0))
+                    .font(theme.font("labels", MEDIUM))
                     .color(theme.muted)
             ]
             .spacing(6)
@@ -643,8 +648,8 @@ fn members_toggle<'a>(
     let face = row![
         ctx.look.glyph(Icon::Users, GLYPH, ink),
         text(ctx.header.members.as_str())
-            .size(14)
-            .font(MEDIUM)
+            .size(theme.type_size("labels", 14.0))
+            .font(theme.font("labels", MEDIUM))
             .color(ink)
     ]
     .spacing(6)

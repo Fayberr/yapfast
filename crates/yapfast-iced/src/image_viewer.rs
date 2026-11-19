@@ -285,7 +285,8 @@ impl<'a> View<'a> {
                 .below()
                 .into(),
         );
-        let mut shown = Viewer::new(GROUND, picture, size, Message::Image(Event::Close))
+        let scrim = self.cx.look.theme.token_colour("scrim", GROUND);
+        let mut shown = Viewer::new(scrim, picture, size, Message::Image(Event::Close))
             .title(attachment.name.clone(), buttons);
         if images.len() > 1
             && let Some(place) = place

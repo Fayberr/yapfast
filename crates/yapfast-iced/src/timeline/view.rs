@@ -172,7 +172,11 @@ pub fn timeline_row<'a>(ctx: crate::ctx::Ctx<'a>, index: usize) -> Element<'a, M
             ..theme.accent
         })
     } else if look.highlighted {
-        Some(if pointed { MENTIONED_HOVER } else { MENTIONED })
+        Some(if pointed {
+            theme.token_colour("mentioned-hover", MENTIONED_HOVER)
+        } else {
+            theme.token_colour("mentioned", MENTIONED)
+        })
     } else if pointed && !crate::theme_effects::message_row_active(ctx) {
         Some(theme.row_hover)
     } else {

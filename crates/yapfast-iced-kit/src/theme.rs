@@ -36,6 +36,63 @@ pub struct Metrics {
     /// Settings → Appearance → Readable text. Reading roles retain their
     /// stock face and weight while keeping the theme's size, as in Slint.
     pub readable_text: bool,
+    /// Optional owner-theme art and glass for `tooltip` surfaces.
+    pub tooltip: Option<TooltipSurface>,
+    /// Whether the active package has armed Hover / Press interface sound cues.
+    pub hover_cue: bool,
+    pub press_cue: bool,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TooltipFit {
+    #[default]
+    Cover,
+    Contain,
+    Tile,
+    Stretch,
+}
+
+#[derive(Clone, Debug)]
+pub struct TooltipLayer {
+    pub handle: iced::advanced::image::Handle,
+    pub frames: Vec<iced::advanced::image::Handle>,
+    pub period_ms: f32,
+    pub width: u32,
+    pub height: u32,
+    pub opacity: f32,
+    pub scale: f32,
+    pub position: (f32, f32),
+    pub fit: TooltipFit,
+    pub drift: (f32, f32),
+    pub size: Option<(f32, f32)>,
+    pub moves: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct TooltipGlass {
+    pub handle: iced::advanced::image::Handle,
+    pub window: (u32, u32),
+    pub ground: Color,
+    pub opacity: f32,
+    pub radius: f32,
+    pub rim: Option<(Color, f32)>,
+    pub highlight: Option<Color>,
+    pub inset: Option<(Color, f32)>,
+    pub gap: f32,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct TooltipSurface {
+    pub layers: Vec<TooltipLayer>,
+    pub glass: Option<TooltipGlass>,
+    pub reserve: Option<[f32; 4]>,
+}
+
+/// Interface sound cue events emitted by kit interactive controls.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CueEvent {
+    Hover,
+    Press,
 }
 
 /// One owner-theme text role after its optional font file has been loaded
@@ -139,6 +196,15 @@ pub struct Motion {
     pub press: Press,
     pub open: Transition,
     pub close: Close,
+    pub unfocused: Unfocused,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Unfocused {
+    Full,
+    #[default]
+    Slow,
+    Still,
 }
 
 impl Default for Motion {
@@ -153,6 +219,7 @@ impl Default for Motion {
             press: Press::None,
             open: Transition::Grow,
             close: Close::Reverse,
+            unfocused: Unfocused::Slow,
         }
     }
 }
@@ -298,6 +365,26 @@ impl Motion {
 
 static METRICS: LazyLock<RwLock<HashMap<String, Arc<Metrics>>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
+
+static CUE_HANDLER: RwLock<Option<fn(CueEvent)>> = RwLock::new(None);
+
+/// Registers the app-level callback invoked when kit buttons trigger a hover
+/// or press sound cue.
+pub fn set_cue_handler(handler: fn(CueEvent)) {
+    *CUE_HANDLER
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(handler);
+}
+
+/// Emits an interface cue if a handler has been registered by the app.
+pub fn emit_cue(event: CueEvent) {
+    if let Some(handler) = *CUE_HANDLER
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+    {
+        handler(event);
+    }
+}
 
 /// Calls `$then!` with the names of [`Theme`]'s own colours, so the app
 /// that fills them names each once too.
@@ -590,6 +677,26 @@ impl Theme {
 
     pub fn token_colour(&self, token: &str, stock: Color) -> Color {
         self.package_colour(token).unwrap_or(stock)
+    }
+
+    pub fn accent_text(&self) -> Color {
+        self.token_colour("accent-text", self.accent)
+    }
+
+    pub fn is_readable_text(&self) -> bool {
+        self.metrics().is_some_and(|metrics| metrics.readable_text)
+    }
+
+    pub fn tooltip_surface(&self) -> Option<TooltipSurface> {
+        self.metrics().and_then(|metrics| metrics.tooltip.clone())
+    }
+
+    pub fn has_hover_cue(&self) -> bool {
+        self.metrics().is_some_and(|metrics| metrics.hover_cue)
+    }
+
+    pub fn has_press_cue(&self) -> bool {
+        self.metrics().is_some_and(|metrics| metrics.press_cue)
     }
 
     /// The effective background for an owner's surface token. An installed

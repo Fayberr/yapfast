@@ -56,7 +56,14 @@ impl<'a> super::View<'a> {
                     line = line.push(self.cx.look.glyph(Icon::Video, 16, theme.muted));
                 }
                 if person.streaming {
-                    line = line.push(controls::live_pill(theme, None));
+                    let activity_themed = self
+                        .cx
+                        .themes
+                        .content(&theme.id, self.cx.layout.theme_content.contains(&theme.id))
+                        .is_some_and(|c| {
+                            c.activity == yapfast_core::themes::content::Follow::Theme
+                        });
+                    line = line.push(controls::live_pill_in(theme, activity_themed, None));
                 }
             }
             card = card.push(line);
@@ -70,7 +77,7 @@ impl<'a> super::View<'a> {
                     .color(theme.muted),
             );
         }
-        let tip = container(card).style(controls::tip_style(theme));
+        let tip = controls::tip_wrap(theme, container(card).style(controls::tip_style(theme)));
         controls::themed_outline(
             tip,
             theme,
@@ -152,6 +159,11 @@ impl<'a> super::View<'a> {
                 face = face.push(self.cx.look.glyph(Icon::Video, 16, theme.muted));
             }
             if person.streaming {
+                let activity_themed = self
+                    .cx
+                    .themes
+                    .content(&theme.id, self.cx.layout.theme_content.contains(&theme.id))
+                    .is_some_and(|c| c.activity == yapfast_core::themes::content::Follow::Theme);
                 let local = live.is_some_and(|live| live.local);
                 let watch = (!local).then(|| {
                     Message::Call(crate::call::Event::ShowPerson(
@@ -159,7 +171,7 @@ impl<'a> super::View<'a> {
                         person.id.clone(),
                     ))
                 });
-                face = face.push(controls::live_pill(theme, watch));
+                face = face.push(controls::live_pill_in(theme, activity_themed, watch));
             }
             if person.muted || person.deafened {
                 let ink = if person.server_muted {

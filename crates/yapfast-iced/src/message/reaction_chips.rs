@@ -155,11 +155,15 @@ pub(super) fn reactions<'a>(
         let words = reaction_tip(ctx, &message.item, &reaction.key)
             .unwrap_or_else(|| Space::new().width(0).height(0).into());
         chips.push(
-            tooltip(chip, words, tooltip::Position::Top)
-                .gap(6)
-                .delay(Duration::from_millis(500))
-                .style(|_| container::Style::default())
-                .into(),
+            tooltip(
+                crate::theme_effects::reaction_stamp(chip, ctx, reaction.mine),
+                words,
+                tooltip::Position::Top,
+            )
+            .gap(6)
+            .delay(Duration::from_millis(500))
+            .style(|_| container::Style::default())
+            .into(),
         );
     }
     Row::from_vec(chips)
@@ -194,9 +198,9 @@ pub(super) fn reaction_tip<'a>(
         row![
             face,
             text(words)
-                .size(14)
-                .font(MEDIUM)
-                .color(theme.text)
+                .size(theme.type_size("labels", 14.0))
+                .font(theme.font("labels", MEDIUM))
+                .color(theme.token_colour("on-tooltip", theme.text))
                 .width(Length::Shrink)
         ]
         .spacing(12)
@@ -205,6 +209,7 @@ pub(super) fn reaction_tip<'a>(
     .padding(16)
     .max_width(288)
     .style(controls::tip_style(theme));
+    let tip = controls::tip_wrap(theme, tip);
     Some(controls::themed_outline(
         tip,
         theme,

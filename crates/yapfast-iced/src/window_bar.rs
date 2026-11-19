@@ -94,6 +94,7 @@ pub enum Event {
     /// Whether the window is maximized now, and full screen (as a kiosk
     /// makes it), read at the size `Shell::sized` counts so.
     State(bool, bool, u32),
+    Minimized(bool),
 }
 
 /// The inbox's tabs, as Discord's first two.
@@ -192,7 +193,7 @@ pub fn read_window_state(app: &App) -> Task<Message> {
         return Task::none();
     };
     let sized = app.shell.sized;
-    window::is_maximized(id).then(move |maximized| {
+    let state = window::is_maximized(id).then(move |maximized| {
         window::mode(id).map(move |mode| {
             Message::Bar(Event::State(
                 maximized,
@@ -200,7 +201,10 @@ pub fn read_window_state(app: &App) -> Task<Message> {
                 sized,
             ))
         })
-    })
+    });
+    let minimized =
+        window::is_minimized(id).map(|min| Message::Bar(Event::Minimized(min.unwrap_or(false))));
+    Task::batch([state, minimized])
 }
 
 pub fn update(app: &mut App, event: Event) -> Task<Message> {
@@ -284,7 +288,14 @@ pub fn update(app: &mut App, event: Event) -> Task<Message> {
             app.bar_drag.armed = None;
             id.map_or_else(Task::none, window::toggle_maximize)
         }
-        Event::Minimize => id.map_or_else(Task::none, |id| window::minimize(id, true)),
+        Event::Minimize => {
+            app.shell.minimized = true;
+            id.map_or_else(Task::none, |id| window::minimize(id, true))
+        }
+        Event::Minimized(minimized) => {
+            app.shell.minimized = minimized;
+            Task::none()
+        }
         // As the desktop's close button: to the tray, or quit.
         Event::Close => app.close_requested(),
         Event::Resize(direction) => {

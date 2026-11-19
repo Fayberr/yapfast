@@ -212,7 +212,7 @@ pub async fn preview(runtime: Arc<BackgroundRuntime>, url: String) -> Option<Pre
 
 /// Decodes PNG, JPEG or WebP under the core's dimension limit, then shrinks
 /// it to the review/gallery size before handing its RGBA bytes to iced.
-fn decode_preview(bytes: &[u8]) -> Option<Preview> {
+pub(crate) fn decode_preview(bytes: &[u8]) -> Option<Preview> {
     let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
         .with_guessed_format()
         .ok()?;

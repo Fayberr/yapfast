@@ -215,8 +215,8 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Option<Element<'a, Message>> {
     let chat = theme.chat;
     let words = container(
         text(line)
-            .size(13)
-            .font(MEDIUM)
+            .size(theme.type_size("small", 13.0))
+            .font(theme.font("small", MEDIUM))
             .color(theme.text)
             .wrapping(text::Wrapping::None),
     )
@@ -232,10 +232,15 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Option<Element<'a, Message>> {
             plays: ctx.plays,
         },
     );
-    let dots = container(Dots {
-        ink: theme.muted,
-        plays: ctx.plays,
-    })
+    let dots = container(crate::theme_effects::slot(
+        Dots {
+            ink: theme.muted,
+            plays: ctx.plays,
+        },
+        ctx,
+        yapfast_core::themes::package::Slot::Typing,
+        Some(chat),
+    ))
     .style(move |_| crate::style::fill(chat));
     // The dots centred under the avatars' 72 px gutter, the words where
     // the messages' text starts.

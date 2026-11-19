@@ -603,7 +603,10 @@ impl<'a> crate::ctx::Ctx<'a> {
 
     /// The APP tag a bot's name wears.
     pub fn bot_tag(self, opacity: f32) -> Element<'a, Message> {
-        let fill = faded(hex(BLURPLE), opacity);
+        let fill = faded(
+            self.look.theme.token_colour("app-badge", hex(BLURPLE)),
+            opacity,
+        );
         container(
             text("APP")
                 .size(10)

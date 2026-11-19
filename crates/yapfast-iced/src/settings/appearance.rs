@@ -847,117 +847,271 @@ impl<'a> Page<'a> {
     /// back to the stock default.
     fn installed_themes(self) -> Element<'a, Message> {
         let theme = self.cx.look.theme;
-        let mut rows = column![].spacing(8);
+        let gallery = self.s.marketplace.gallery;
+        let header: Element<'a, Message> = if self.cx.themes.installed.is_empty() {
+            form::heading(theme, "INSTALLED THEMES")
+        } else {
+            let toggle = |label: &'static str, wanted: bool| {
+                action(
+                    theme,
+                    label,
+                    if gallery == wanted {
+                        Kind::Primary
+                    } else {
+                        Kind::Plain
+                    },
+                    (gallery != wanted).then_some(marketplace_message(
+                        theme_marketplace::Event::ToggleGallery(wanted),
+                    )),
+                )
+                .small()
+            };
+            form::beside(
+                form::heading(theme, "INSTALLED THEMES"),
+                row![toggle("List", false), toggle("Gallery", true)].spacing(6),
+            )
+        };
+        let mut rows = column![].spacing(10);
         if self.cx.themes.installed.is_empty() && self.cx.themes.refused.is_empty() {
-            rows = rows.push(form::note(
-                theme,
-                "No theme packages are installed in this data folder.",
-            ));
+            rows = rows.push(
+                container(
+                    column![
+                        form::note(theme, "No theme packages are installed in this data folder."),
+                        form::note(
+                            theme,
+                            "Find one in the Marketplace, add one from its GitHub repository, or make your own in Create.",
+                        ),
+                        row![
+                            action(
+                                theme,
+                                "Browse the Marketplace",
+                                Kind::Primary,
+                                Some(marketplace_message(theme_marketplace::Event::Tab(
+                                    theme_marketplace::Tab::Marketplace,
+                                ))),
+                            )
+                            .small(),
+                            action(
+                                theme,
+                                "Add from URL",
+                                Kind::Plain,
+                                Some(marketplace_message(theme_marketplace::Event::Tab(
+                                    theme_marketplace::Tab::AddFromUrl,
+                                ))),
+                            )
+                            .small(),
+                            action(
+                                theme,
+                                "Create",
+                                Kind::Plain,
+                                Some(theme_message(Event::Creator(
+                                    super::theme_creator::Event::Open,
+                                ))),
+                            )
+                            .small(),
+                        ]
+                        .spacing(8),
+                    ]
+                    .spacing(8),
+                )
+                .padding(14)
+                .width(Length::Fill)
+                .style(move |_| crate::style::rounded(theme.raised, 8)),
+            );
         } else if self.cx.themes.installed.is_empty() {
             rows = rows.push(form::note(theme, "No installed theme could be opened."));
+        } else if gallery {
+            let mut grid = column![].spacing(12);
+            for chunk in self.cx.themes.installed.chunks(2) {
+                let mut line = row![].spacing(12);
+                for installed in chunk {
+                    line = line.push(
+                        container(self.installed_card(installed, true))
+                            .width(Length::FillPortion(1)),
+                    );
+                }
+                if chunk.len() == 1 {
+                    line = line.push(Space::new().width(Length::FillPortion(1)));
+                }
+                grid = grid.push(line);
+            }
+            rows = rows.push(grid);
         } else {
             for installed in &self.cx.themes.installed {
-                let applied = self.cx.themes.chosen_id() == installed.id;
-                let authors = installed.authors.join(", ");
-                let details = if authors.is_empty() {
-                    format!("v{} · {}", installed.version, modes_text(&installed.modes))
-                } else {
-                    format!(
-                        "by {authors} · v{} · {}",
-                        installed.version,
-                        modes_text(&installed.modes)
-                    )
-                };
-                let mut label = column![
-                    text(installed.name.clone())
-                        .size(15)
-                        .font(if applied { BOLD } else { MEDIUM })
-                        .color(theme.text),
-                    text(if applied { "Applied" } else { "Installed" })
-                        .size(12)
-                        .color(if applied { theme.accent } else { theme.muted }),
-                    text(details).size(13).color(theme.muted),
-                ]
-                .spacing(2)
-                .width(Length::Fill);
-                if !installed.description.is_empty() {
-                    label = label.push(
-                        text(installed.description.clone())
-                            .size(13)
-                            .color(theme.secondary),
-                    );
-                }
-                if !installed.notes.is_empty() {
-                    label = label.push(
-                        text(format!(
-                            "Left out by this Yapfast: {}",
-                            installed.notes.join("\n")
-                        ))
-                        .size(12)
-                        .color(theme.muted),
-                    );
-                }
-                let press = if applied {
-                    Event::TurnOff
-                } else {
-                    Event::Choose(installed.id.clone())
-                };
-                let package_id = installed
-                    .id
-                    .strip_prefix(crate::themes::INSTALLED)
-                    .unwrap_or(&installed.id)
-                    .to_owned();
-                let mut actions = row![].spacing(6).align_y(Alignment::Center);
-                if !applied {
-                    actions = actions.push(
-                        action(
-                            theme,
-                            "Try",
-                            Kind::Plain,
-                            Some(marketplace_message(theme_marketplace::Event::TryInstalled(
-                                installed.id.clone(),
-                            ))),
-                        )
-                        .small(),
-                    );
-                }
-                actions = actions.push(
-                    action(
-                        theme,
-                        if applied { "Turn off theme" } else { "Apply" },
-                        Kind::Plain,
-                        Some(theme_message(press)),
-                    )
-                    .small(),
-                );
-                if installed.previous.is_some() {
-                    actions = actions.push(
-                        action(
-                            theme,
-                            "Roll back",
-                            Kind::Plain,
-                            Some(marketplace_message(theme_marketplace::Event::RollBack(
-                                package_id.clone(),
-                            ))),
-                        )
-                        .small(),
-                    );
-                }
-                actions = actions.push(
-                    action(
-                        theme,
-                        "Remove",
-                        Kind::Ghost,
-                        Some(marketplace_message(theme_marketplace::Event::Uninstall(
-                            package_id,
-                        ))),
-                    )
-                    .small(),
-                );
-                rows = rows.push(row![label, actions].spacing(12).align_y(Alignment::Center));
+                rows = rows.push(self.installed_card(installed, false));
             }
         }
-        form::group([form::heading(theme, "INSTALLED THEMES"), rows.into()])
+        form::group([header, rows.into()])
+    }
+
+    fn installed_card(
+        self,
+        installed: &'a crate::themes::Installed,
+        gallery: bool,
+    ) -> Element<'a, Message> {
+        let theme = self.cx.look.theme;
+        let applied = self.cx.themes.chosen_id() == installed.id;
+        let authors = installed.authors.join(", ");
+        let details = if authors.is_empty() {
+            format!("v{} · {}", installed.version, modes_text(&installed.modes))
+        } else {
+            format!(
+                "by {authors} · v{} · {}",
+                installed.version,
+                modes_text(&installed.modes)
+            )
+        };
+        let thumb: Element<'a, Message> = if let Some(handle) = &installed.preview {
+            let pic = iced::widget::image(handle.clone())
+                .content_fit(iced::ContentFit::Cover)
+                .height(if gallery { 110.0 } else { 78.0 });
+            if gallery {
+                pic.width(Length::Fill).into()
+            } else {
+                pic.width(124.0).into()
+            }
+        } else {
+            preview(
+                &installed.palette_preview,
+                if gallery { 220.0 } else { 124.0 },
+            )
+        };
+        let mut label = column![
+            row![
+                text(installed.name.clone())
+                    .size(theme.type_size("names", 15.0))
+                    .font(theme.font("names", if applied { BOLD } else { MEDIUM }))
+                    .color(theme.text)
+                    .width(Length::Fill),
+                text(if applied { "Applied" } else { "Installed" })
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", MEDIUM))
+                    .color(if applied {
+                        theme.accent_text()
+                    } else {
+                        theme.muted
+                    }),
+            ]
+            .spacing(8)
+            .align_y(Alignment::Center),
+            text(details)
+                .size(theme.type_size("small", 13.0))
+                .font(theme.font("small", crate::fonts::REGULAR))
+                .color(theme.muted),
+        ]
+        .spacing(3)
+        .width(Length::Fill);
+        if let Some(based_on) = &installed.based_on {
+            label = label.push(
+                text(format!("Remixes {based_on}"))
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", crate::fonts::REGULAR))
+                    .color(theme.muted),
+            );
+        }
+        if !installed.description.is_empty() {
+            label = label.push(
+                text(installed.description.clone())
+                    .size(theme.type_size("body", 13.0))
+                    .font(theme.font("body", crate::fonts::REGULAR))
+                    .color(theme.secondary),
+            );
+        }
+        let cost = theme_marketplace::cost_line(
+            theme,
+            &installed.cost,
+            &[],
+            self.s.marketplace.cost_details.contains(&installed.id),
+            marketplace_message(theme_marketplace::Event::ToggleCostDetails(
+                installed.id.clone(),
+            )),
+        );
+        label = label.push(cost);
+        if !installed.notes.is_empty() {
+            label = label.push(
+                text(format!(
+                    "Left out by this Yapfast: {}",
+                    installed.notes.join("; ")
+                ))
+                .size(theme.type_size("small", 12.0))
+                .font(theme.font("small", crate::fonts::REGULAR))
+                .color(theme.muted),
+            );
+        }
+        let press = if applied {
+            Event::TurnOff
+        } else {
+            Event::Choose(installed.id.clone())
+        };
+        let package_id = installed
+            .id
+            .strip_prefix(crate::themes::INSTALLED)
+            .unwrap_or(&installed.id)
+            .to_owned();
+        let mut actions = row![].spacing(6).align_y(Alignment::Center);
+        if !applied {
+            actions = actions.push(
+                action(
+                    theme,
+                    "Try",
+                    Kind::Plain,
+                    Some(marketplace_message(theme_marketplace::Event::TryInstalled(
+                        installed.id.clone(),
+                    ))),
+                )
+                .small(),
+            );
+        }
+        actions = actions.push(
+            action(
+                theme,
+                if applied { "Turn off theme" } else { "Apply" },
+                if applied { Kind::Plain } else { Kind::Primary },
+                Some(theme_message(press)),
+            )
+            .small(),
+        );
+        if installed.previous.is_some() {
+            actions = actions.push(
+                action(
+                    theme,
+                    "Roll back",
+                    Kind::Plain,
+                    Some(marketplace_message(theme_marketplace::Event::RollBack(
+                        package_id.clone(),
+                    ))),
+                )
+                .small(),
+            );
+        }
+        actions = actions.push(
+            action(
+                theme,
+                "Remove",
+                Kind::Ghost,
+                Some(marketplace_message(theme_marketplace::Event::Uninstall(
+                    package_id,
+                ))),
+            )
+            .small(),
+        );
+        if gallery {
+            container(column![thumb, label, actions].spacing(8))
+                .padding(12)
+                .width(Length::Fill)
+                .style(move |_| crate::style::rounded(theme.raised, 8))
+                .into()
+        } else {
+            container(
+                row![thumb, label, actions]
+                    .spacing(12)
+                    .align_y(Alignment::Center),
+            )
+            .padding(10)
+            .width(Length::Fill)
+            .style(move |_| crate::style::rounded(theme.raised, 8))
+            .into()
+        }
     }
 
     /// Lock entries or packages the core refused, kept visible with the

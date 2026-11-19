@@ -235,6 +235,7 @@ pub struct NameInk<'a> {
     pub size: f32,
     pub weight: u16,
     pub color: Color,
+    pub font_role: &'static str,
     pub style: Option<&'a NameLook>,
     pub key: Option<&'a str>,
 }
@@ -245,6 +246,7 @@ impl NameInk<'_> {
             size,
             weight,
             color,
+            font_role: "names",
             style: None,
             key: None,
         }
@@ -254,6 +256,11 @@ impl NameInk<'_> {
 impl<'a> NameInk<'a> {
     pub fn style(mut self, style: Option<&'a NameLook>) -> Self {
         self.style = style;
+        self
+    }
+
+    pub fn font_role(mut self, role: &'static str) -> Self {
+        self.font_role = role;
         self
     }
 
@@ -383,11 +390,11 @@ impl<'a> crate::ctx::Ctx<'a> {
         let font = if style.is_some() {
             stock
         } else {
-            self.look.theme.font("names", stock)
+            self.look.theme.font(ink.font_role, stock)
         };
         let effect = crate::theme_effects::name_hover_effect(self, &shown);
         let mut name = crate::elide::elide(shown)
-            .size(self.look.theme.type_size("names", ink.size))
+            .size(self.look.theme.type_size(ink.font_role, ink.size))
             .font(font)
             .color(color)
             .light(crate::theme_effects::text_light(

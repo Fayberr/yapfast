@@ -193,7 +193,13 @@ pub fn view<'a>(searching: &'a Searching, cx: Ctx<'a>) -> Option<Element<'a, Mes
     let head = column![
         container(
             row![
-                container(elide(heading).size(15).font(BOLD).color(theme.text)).width(Length::Fill),
+                container(
+                    elide(theme.heading(&heading).into_owned())
+                        .size(theme.header_size(15.0))
+                        .font(theme.header_font(BOLD))
+                        .color(theme.text),
+                )
+                .width(Length::Fill),
                 cx.look
                     .icon_button(Icon::X, "Close search", Message::Search(Event::Clear))
                     .below(),
@@ -214,8 +220,8 @@ pub fn view<'a>(searching: &'a Searching, cx: Ctx<'a>) -> Option<Element<'a, Mes
                 row![
                     cx.look.glyph(Icon::Hash, 14, theme.muted),
                     elide(channel.as_str())
-                        .size(13)
-                        .font(BOLD)
+                        .size(theme.type_size("labels", 13.0))
+                        .font(theme.font("labels", BOLD))
                         .color(theme.secondary),
                 ]
                 .spacing(4)
@@ -282,7 +288,8 @@ pub fn search_field<'a>(
     let (ink, hint, selection) = (theme.text, theme.muted, theme.selection);
     let input = text_input(placeholder, value)
         .id(iced::widget::Id::new(id))
-        .size(14)
+        .size(theme.type_size("body", 14.0))
+        .font(theme.font("body", crate::fonts::REGULAR))
         .padding(0)
         .on_input(on_input)
         .on_submit(submit)

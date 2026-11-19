@@ -417,6 +417,9 @@ pub struct Face<'a> {
     /// Owner-theme art around the avatar. A frame with a window places the
     /// avatar in that window; an ordinary frame is drawn over it.
     pub frame: Option<&'a yapfast_core::themes::lists::TileArt>,
+    /// Illuminated initial opt-in (`Some((member_row, pointed))`) for
+    /// message/member avatars when `content.avatars.initials` is declared.
+    pub initial: Option<(bool, bool)>,
 }
 
 impl<'a> Face<'a> {
@@ -435,6 +438,21 @@ impl<'a> Face<'a> {
             dot_size: None,
             ring: None,
             frame: None,
+            initial: None,
+        }
+    }
+
+    pub fn illuminated(self, revealed: bool) -> Self {
+        Self {
+            initial: Some((false, revealed)),
+            ..self
+        }
+    }
+
+    pub fn illuminated_member(self, revealed: bool) -> Self {
+        Self {
+            initial: Some((true, revealed)),
+            ..self
         }
     }
 
@@ -884,6 +902,7 @@ impl<'a> crate::ctx::Ctx<'a> {
             dot_size,
             ring,
             frame,
+            initial,
         } = face;
         let content = self.themes.content(
             &self.look.theme.id,
@@ -906,8 +925,55 @@ impl<'a> crate::ctx::Ctx<'a> {
                     .avatar_radius(avatar_size, avatar_size / 2.0),
             }
         };
-        let avatar =
-            self.avatar_tinted_exact(url, name, key.unwrap_or(name), avatar_size, radius, opacity);
+        let illuminated = initial.and_then(|(for_member, revealed)| {
+            let initials = content.and_then(|c| c.avatars.initials)?;
+            if (for_member && !initials.members) || (initials.reveal && revealed) {
+                return None;
+            }
+            let letter = yapfast_core::themes::content::initial_letter(name)?;
+            Some((initials, letter))
+        });
+        let avatar = if let Some((initials, letter)) = illuminated {
+            let theme = self.look.theme;
+            let ink = faded(
+                initials
+                    .colour
+                    .map(crate::themes::argb)
+                    .unwrap_or_else(|| theme.accent_text()),
+                opacity,
+            );
+            let ground = initials
+                .ground
+                .map(crate::themes::argb)
+                .map(|c| faded(c, opacity));
+            let border = initials.border.map_or_else(
+                || iced::Border {
+                    radius: radius.into(),
+                    ..Default::default()
+                },
+                |(c, w)| iced::Border {
+                    color: faded(crate::themes::argb(c), opacity),
+                    width: w,
+                    radius: radius.into(),
+                },
+            );
+            let font = theme.font(initials.font.name(), crate::fonts::BOLD);
+            container(
+                text(letter)
+                    .size((avatar_size * initials.size).round().max(1.0))
+                    .font(font)
+                    .color(ink),
+            )
+            .center(avatar_size)
+            .style(move |_| iced::widget::container::Style {
+                background: ground.map(Into::into),
+                border,
+                ..Default::default()
+            })
+            .into()
+        } else {
+            self.avatar_tinted_exact(url, name, key.unwrap_or(name), avatar_size, radius, opacity)
+        };
         let avatar: Element<'a, Message> = match content.and_then(|content| content.avatars.ring) {
             Some((colour, width)) => container(avatar)
                 .style(move |_| container::Style {

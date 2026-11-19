@@ -190,6 +190,7 @@ pub struct Piece<'a, M> {
     line_height: f32,
     color: Color,
     light: TextLight,
+    hover_effect: Option<crate::elide::HoverTextEffect>,
     fill: bool,
     /// A press here starts a selection; the author's starts a click instead.
     starts: bool,
@@ -244,6 +245,7 @@ impl<'a, M> Piece<'a, M> {
             line_height: 22.0,
             color: Color::WHITE,
             light: TextLight::default(),
+            hover_effect: None,
             fill: false,
             starts: true,
             dragging: false,
@@ -314,6 +316,11 @@ impl<'a, M> Piece<'a, M> {
         self
     }
 
+    pub fn hover_effect(mut self, effect: crate::elide::HoverTextEffect) -> Self {
+        self.hover_effect = Some(effect);
+        self
+    }
+
     pub fn fill(mut self) -> Self {
         self.fill = true;
         self
@@ -375,6 +382,11 @@ struct State {
     /// The last place reported while dragging, so moving within a glyph
     /// reports nothing.
     reported: Option<Mark>,
+    hovered: bool,
+    started: Option<std::time::Instant>,
+    hover_text: Option<String>,
+    hover_paragraph: Option<Paragraph>,
+    hover_light: Option<Paragraph>,
 }
 
 impl<M> Widget<M, Theme, Renderer> for Piece<'_, M> {
@@ -401,6 +413,11 @@ impl<M> Widget<M, Theme, Renderer> for Piece<'_, M> {
             paragraph: Paragraph::default(),
             light: Paragraph::default(),
             reported: None,
+            hovered: false,
+            started: None,
+            hover_text: None,
+            hover_paragraph: None,
+            hover_light: None,
         })
     }
 
@@ -564,32 +581,83 @@ impl<M> Widget<M, Theme, Renderer> for Piece<'_, M> {
                         }
                     }
                 }
-            }
-            Event::Mouse(mouse::Event::CursorMoved { .. }) if self.dragging => {
-                // The pointer as the scrollable translates it (the event's own
-                // position is the window's).
-                let Some(position) = cursor.land().position() else {
-                    return;
-                };
-                // Over this piece, or beside it at its height: the text
-                // fills the row, so it takes the gutter and the margin; the
-                // author and time take only what's over them, and the time
-                // what's right of it.
-                let level = position.y >= bounds.y && position.y < bounds.y + bounds.height;
-                let beside = match self.part {
-                    part if part >= FIRST_PART => true,
-                    0 => position.x < bounds.x + bounds.width,
-                    _ => position.x >= bounds.x,
-                };
-                if level
-                    && beside
-                    && viewport.contains(position)
-                    && let Some(item) = &self.item
+                if let (Some(effect), Some(started)) = (self.hover_effect, state.started)
+                    && let Some(first) = self.spans.first()
                 {
-                    let mark = self.mark(&state.paragraph, position, bounds);
-                    if state.reported != Some(mark) {
-                        state.reported = Some(mark);
-                        shell.publish((self.on_select)(Select::To(mark, item.clone())));
+                    let elapsed = now.saturating_duration_since(started).as_secs_f32() * 1000.0;
+                    let (shown, active) =
+                        (effect.render)(&first.text, elapsed, effect.duration_ms, effect.seed);
+                    if active {
+                        if state.hover_text.as_deref() != Some(shown.as_str()) {
+                            let mut h_span = first.clone();
+                            h_span.text = std::borrow::Cow::Owned(shown.clone());
+                            let mut l_span = h_span.clone();
+                            l_span.color = None;
+                            let h_spans = [h_span];
+                            let l_spans = [l_span];
+                            let make = |s| {
+                                Paragraph::with_spans(text::Text {
+                                    content: s,
+                                    bounds: Size::new(state.width.max(1.0), f32::INFINITY),
+                                    size: Pixels(self.size),
+                                    line_height: LineHeight::Absolute(Pixels(self.line_height)),
+                                    font: REGULAR,
+                                    align_x: text::Alignment::Default,
+                                    align_y: iced::alignment::Vertical::Top,
+                                    shaping: text::Shaping::Advanced,
+                                    wrapping: Wrapping::None,
+                                })
+                            };
+                            state.hover_paragraph = Some(make(&h_spans));
+                            state.hover_light = Some(make(&l_spans));
+                            state.hover_text = Some(shown);
+                        }
+                        shell.request_redraw_at(*now + effect.every);
+                    } else {
+                        state.started = None;
+                        state.hover_text = None;
+                        state.hover_paragraph = None;
+                        state.hover_light = None;
+                    }
+                }
+            }
+            Event::Mouse(mouse::Event::CursorMoved { .. }) => {
+                if self.hover_effect.is_some() {
+                    let over = cursor.is_over(bounds);
+                    if over && !state.hovered {
+                        state.hovered = true;
+                        state.started = Some(std::time::Instant::now());
+                        shell.request_redraw();
+                    } else if !over && state.hovered {
+                        state.hovered = false;
+                    }
+                }
+                if self.dragging {
+                    // The pointer as the scrollable translates it (the event's own
+                    // position is the window's).
+                    let Some(position) = cursor.land().position() else {
+                        return;
+                    };
+                    // Over this piece, or beside it at its height: the text
+                    // fills the row, so it takes the gutter and the margin; the
+                    // author and time take only what's over them, and the time
+                    // what's right of it.
+                    let level = position.y >= bounds.y && position.y < bounds.y + bounds.height;
+                    let beside = match self.part {
+                        part if part >= FIRST_PART => true,
+                        0 => position.x < bounds.x + bounds.width,
+                        _ => position.x >= bounds.x,
+                    };
+                    if level
+                        && beside
+                        && viewport.contains(position)
+                        && let Some(item) = &self.item
+                    {
+                        let mark = self.mark(&state.paragraph, position, bounds);
+                        if state.reported != Some(mark) {
+                            state.reported = Some(mark);
+                            shell.publish((self.on_select)(Select::To(mark, item.clone())));
+                        }
                     }
                 }
             }
@@ -728,14 +796,16 @@ impl<M> Widget<M, Theme, Renderer> for Piece<'_, M> {
                 }
             }
         }
+        let active_light = state.hover_light.as_ref().unwrap_or(&state.light);
+        let active_para = state.hover_paragraph.as_ref().unwrap_or(&state.paragraph);
         draw_light(
             renderer,
-            &state.light,
+            active_light,
             bounds.position(),
             *viewport,
             self.light,
         );
-        renderer.fill_paragraph(&state.paragraph, bounds.position(), self.color, *viewport);
+        renderer.fill_paragraph(active_para, bounds.position(), self.color, *viewport);
         for (index, picture) in &self.pictures {
             for region in state.paragraph.span_bounds(*index) {
                 let at = square_in(bounds, region);

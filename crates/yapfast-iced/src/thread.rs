@@ -815,10 +815,10 @@ pub fn aside_view<'a>(ctx: crate::ctx::Ctx<'a>) -> Option<Element<'a, Message>> 
     let head = row![
         ctx.look.glyph(Icon::Thread, 18, theme.muted),
         container(
-            elide(aside.name.as_str())
-                .size(15)
-                .font(BOLD)
-                .color(theme.text)
+            elide(theme.heading(aside.name.as_str()).into_owned())
+                .size(theme.header_size(15.0))
+                .font(theme.header_font(BOLD))
+                .color(theme.text),
         )
         .width(Length::Fill),
         ctx.look

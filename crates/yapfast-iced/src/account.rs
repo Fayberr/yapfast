@@ -237,9 +237,16 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
             ),
     );
     let face = ring_and_dot(ctx, account, face);
+    let face = crate::theme_effects::slot(
+        face,
+        ctx,
+        yapfast_core::themes::package::Slot::OwnAvatar,
+        Some(theme.panel),
+    );
     let second: Element<'a, Message> = if pointed && !account.username.is_empty() {
         text(account.username.as_str())
-            .size(13)
+            .size(theme.type_size("small", 13.0))
+            .font(theme.font("small", crate::fonts::REGULAR))
             .color(theme.muted)
             .wrapping(text::Wrapping::None)
             .into()
@@ -254,8 +261,8 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
         container(
             column![
                 text(account.name.as_str())
-                    .size(15)
-                    .font(BOLD)
+                    .size(theme.type_size("names", 15.0))
+                    .font(theme.font("names", BOLD))
                     .color(theme.text)
                     .wrapping(text::Wrapping::None),
                 second
@@ -389,7 +396,7 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
         24,
         Some(crate::app::settings(crate::settings::Event::Reopen)),
     ));
-    let ground = theme.panel;
+    let ground = theme.token_colour("account", theme.panel);
     let face: Element<'a, Message> = match open {
         Some(open) => mouse_area(face)
             .on_press(open)
@@ -474,7 +481,7 @@ fn ring_and_dot<'a>(
             Dot::Online => theme.live,
             Dot::Offline => theme.faint,
         };
-        let ground = theme.panel;
+        let ground = theme.token_colour("account", theme.panel);
         let dot = container(
             container(Space::new())
                 .width(8)

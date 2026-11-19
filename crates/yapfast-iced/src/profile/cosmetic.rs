@@ -256,6 +256,16 @@ fn effect_view<'a>(
     width: f32,
     since: Option<Instant>,
 ) -> Option<Element<'a, Message>> {
+    if ctx
+        .themes
+        .content(
+            &ctx.look.theme.id,
+            ctx.layout.theme_content.contains(&ctx.look.theme.id),
+        )
+        .is_some_and(|c| c.profiles.effects == yapfast_core::themes::content::Shown::Hide)
+    {
+        return None;
+    }
     let effect = worn_effect(ctx.state, shown).filter(|effect| !effect.layers.is_empty())?;
     let pictures = &ctx.state.pictures;
     let time = since.map(|since| since.elapsed().as_millis() as u64);

@@ -5,15 +5,20 @@
 //! core background runtime; checked bytes stay in [`Review`] until Install.
 //! Reviewed bytes remain protected until Install or the explicit Try flow.
 
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+    sync::Arc,
+};
 
 use iced::{
-    Element, Length, Task,
-    widget::{Space, column, container, image, row, text},
+    Alignment, Element, Length, Task,
+    widget::{Space, button, column, container, image, row, text},
 };
 use yapfast_core::{
     runtime::BackgroundRuntime,
     themes::{
+        check::plain::{self, Weight},
         install::Fetched,
         remote::{Catalog, Listing, Repository},
     },
@@ -90,18 +95,9 @@ impl Review {
         }
     }
 
+    #[cfg(test)]
     pub fn notes(&self) -> String {
-        let notes = &self.fetched.package().notes;
-        let mut shown = notes
-            .iter()
-            .take(MOST_NOTES)
-            .map(String::as_str)
-            .collect::<Vec<_>>()
-            .join("\n");
-        if notes.len() > MOST_NOTES {
-            shown.push_str(&format!("\nand {} more", notes.len() - MOST_NOTES));
-        }
-        shown
+        format_notes(&self.fetched.package().notes)
     }
 
     pub fn modes(&self) -> &'static str {
@@ -134,6 +130,8 @@ pub struct Marketplace {
     pub installed: Option<String>,
     pub theme_changed: bool,
     pub theme_applied: bool,
+    pub gallery: bool,
+    pub cost_details: HashSet<String>,
     trial_permissions: Option<(SoundPrefs, bool)>,
 }
 
@@ -142,6 +140,8 @@ pub enum Event {
     Open,
     Tab(Tab),
     Search(String),
+    ToggleGallery(bool),
+    ToggleCostDetails(String),
     RetryCatalog,
     CatalogLoaded(Result<Catalog, String>),
     PreviewLoaded(String, Option<Preview>),
@@ -195,6 +195,12 @@ impl Marketplace {
                 }
             }
             Event::Search(query) => self.query = query,
+            Event::ToggleGallery(gallery) => self.gallery = gallery,
+            Event::ToggleCostDetails(key) => {
+                if !self.cost_details.remove(&key) {
+                    self.cost_details.insert(key);
+                }
+            }
             Event::RetryCatalog => return self.load_catalog(runtime),
             Event::CatalogLoaded(result) => {
                 self.catalog_loading = false;
@@ -498,24 +504,58 @@ impl Marketplace {
                     .into(),
             ]);
         }
-        let mut cards = column![].spacing(12);
-        let mut any = false;
-        for listing in self.listed(themes) {
-            any = true;
-            cards = cards.push(self.listing_view(theme, listing));
-        }
-        if !any {
-            let words = if self.query.trim().is_empty() {
+        let listings: Vec<_> = self.listed(themes).collect();
+        if listings.is_empty() {
+            let empty_query = self.query.trim().is_empty();
+            let words = if empty_query {
                 "Every theme the marketplace lists is installed.".to_owned()
             } else {
                 format!(
-                    "No themes match “{}”. Try another word or author.",
+                    "No themes match \u{201c}{}\u{201d}. Try another word or author.",
                     self.query
                 )
             };
-            cards = cards.push(form::note(theme, words));
+            let mut buttons = row![].spacing(8);
+            if !empty_query {
+                buttons = buttons.push(
+                    controls::action(
+                        theme,
+                        "Clear search",
+                        Kind::Primary,
+                        Some(Event::Search(String::new())),
+                    )
+                    .small(),
+                );
+            }
+            buttons = buttons.push(
+                controls::action(
+                    theme,
+                    "Add from URL",
+                    Kind::Plain,
+                    Some(Event::Tab(Tab::AddFromUrl)),
+                )
+                .small(),
+            );
+            let notice = container(column![form::note(theme, words), buttons].spacing(10))
+                .padding(14)
+                .width(Length::Fill)
+                .style(move |_| crate::style::rounded(theme.raised, 8));
+            return form::group([search.into(), notice.into()]);
         }
-        form::group([search.into(), cards.into()])
+        let mut grid = column![].spacing(12);
+        for chunk in listings.chunks(2) {
+            let mut line = row![].spacing(12);
+            for listing in chunk {
+                line = line.push(
+                    container(self.listing_view(theme, listing)).width(Length::FillPortion(1)),
+                );
+            }
+            if chunk.len() == 1 {
+                line = line.push(Space::new().width(Length::FillPortion(1)));
+            }
+            grid = grid.push(line);
+        }
+        form::group([search.into(), grid.into()])
     }
 
     fn listing_view<'a>(
@@ -662,8 +702,13 @@ impl Marketplace {
         }
         parts.push(form::group([
             form::heading(theme, "TO RUN"),
-            form::note(theme, review.fetched.report.cost.text()),
-            form::note(theme, review.notes()),
+            cost_line(
+                theme,
+                &review.fetched.report.cost.text(),
+                &package.notes,
+                self.cost_details.contains("review"),
+                Event::ToggleCostDetails("review".into()),
+            ),
         ]));
         if review.notification_sounds {
             parts.push(
@@ -719,6 +764,101 @@ impl Marketplace {
         );
         form::page(parts)
     }
+}
+
+/// A theme's weight badge, plain-language summary and expandable cost breakdown
+/// + package notes, shared across Installed and Review screens.
+pub(super) fn cost_line<'a, M: Clone + 'a>(
+    theme: &'a crate::theme::Theme,
+    cost: &str,
+    notes: &[String],
+    expanded: bool,
+    on_toggle: M,
+) -> Element<'a, M> {
+    let parsed = plain::plain(cost);
+    if parsed.is_none() && notes.is_empty() {
+        return Space::new().height(0).into();
+    }
+    let (dot_colour, summary, rows) = match &parsed {
+        Some(p) => (
+            match p.weight {
+                Weight::Light => theme.live,
+                Weight::Moderate => theme.loud,
+                Weight::Heavy => theme.danger,
+            },
+            p.summary.clone(),
+            p.rows.as_slice(),
+        ),
+        None => (theme.muted, "Package notes".to_owned(), [].as_slice()),
+    };
+    let dot = container(Space::new())
+        .width(7)
+        .height(7)
+        .style(move |_| crate::style::rounded(dot_colour, 3.5));
+    let mut header = row![
+        dot,
+        text(summary)
+            .size(theme.type_size("small", 12.0))
+            .font(theme.font("small", crate::fonts::MEDIUM))
+            .color(theme.secondary)
+            .width(Length::Fill),
+    ]
+    .spacing(6)
+    .align_y(Alignment::Center);
+    if !rows.is_empty() || !notes.is_empty() {
+        header = header.push(
+            button(
+                text(if expanded { "Less" } else { "Details" })
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", crate::fonts::MEDIUM)),
+            )
+            .padding([2, 6])
+            .on_press(on_toggle)
+            .style(controls::ink_style(theme.accent_text(), theme.text)),
+        );
+    }
+    if !expanded {
+        return header.into();
+    }
+    let mut detail = column![header].spacing(4);
+    for (label, value) in rows {
+        detail = detail.push(
+            row![
+                text(format!("{label}:"))
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", crate::fonts::MEDIUM))
+                    .color(theme.muted),
+                text(value.clone())
+                    .size(theme.type_size("small", 12.0))
+                    .font(theme.font("small", crate::fonts::REGULAR))
+                    .color(theme.secondary),
+            ]
+            .spacing(6),
+        );
+    }
+    if !notes.is_empty() {
+        let shown = format_notes(notes);
+        detail = detail.push(
+            text(format!("Left out by this Yapfast:\n{shown}"))
+                .size(theme.type_size("small", 12.0))
+                .font(theme.font("small", crate::fonts::REGULAR))
+                .color(theme.muted),
+        );
+    }
+    detail.into()
+}
+
+fn format_notes(notes: &[String]) -> String {
+    let mut shown = notes
+        .iter()
+        .take(MOST_NOTES)
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join("\n");
+    if notes.len() > MOST_NOTES {
+        shown.push_str(&format!("\nand {} more", notes.len() - MOST_NOTES));
+    }
+    shown
 }
 
 #[cfg(test)]

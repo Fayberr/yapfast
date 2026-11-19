@@ -1130,6 +1130,7 @@ impl<'a> View<'a> {
         let (width, height) = self.tile_size();
         let pointed = self.cx.pointed.rail.as_deref() == Some("");
         let face = self.glyph_tile(Icon::Logo, home.selected || pointed);
+        let face = crate::theme_effects::rail_icon(face, self.cx, true, 0);
         let marks = Marks {
             selected: home.selected,
             unread: home.unread,
@@ -1403,11 +1404,18 @@ impl<'a> View<'a> {
                 Message::Rail(Event::Server(item.id.clone())),
             ),
         };
-        let face = crate::widgets::motion::interactive(
+        let place = self.s.items[..index]
+            .iter()
+            .filter(|i| i.kind != Kind::Divider)
+            .count();
+        let face = crate::theme_effects::rail_icon(face, self.cx, false, place);
+        let face = crate::widgets::motion::interactive_cued(
             face,
             self.cx.look.theme.motion(),
             self.cx.look.theme.accent,
             self.cx.look.theme.surface_radius("rail-icon", RADIUS),
+            self.cx.look.theme.has_hover_cue(),
+            self.cx.look.theme.has_press_cue(),
         );
         let open_folder = matches!(item.kind, Kind::Folder { open: true, .. });
         let marks = Marks {
@@ -1546,7 +1554,7 @@ impl<'a> View<'a> {
         } else {
             0.0
         };
-        let ink = theme.text;
+        let ink = theme.token_colour("pill", theme.text);
         let mut layers = stack![];
         if pill > 0.0 {
             let (pill_x, pill_y, pill_width, pill_height, pill_corners) = if top_rail {
@@ -1570,14 +1578,22 @@ impl<'a> View<'a> {
                     },
                 )
             };
-            layers = layers.push(controls::placed(
-                container(Space::new())
-                    .width(pill_width)
-                    .height(pill_height)
-                    .style(move |_| rounded(ink, corners(pill_corners))),
-                pill_x,
-                pill_y,
-            ));
+            let pill_el: Element<'a, Message> = container(Space::new())
+                .width(pill_width)
+                .height(pill_height)
+                .style(move |_| rounded(ink, corners(pill_corners)))
+                .into();
+            let pill_el = if marks.unread && !marks.selected && !marks.pointed {
+                crate::theme_effects::slot(
+                    pill_el,
+                    self.cx,
+                    yapfast_core::themes::package::Slot::Unread,
+                    Some(theme.rail),
+                )
+            } else {
+                pill_el
+            };
+            layers = layers.push(controls::placed(pill_el, pill_x, pill_y));
         }
         let label = crate::themes::list_case(tiles.map(|tiles| tiles.label_case), tip.as_ref())
             .into_owned();
@@ -1590,11 +1606,13 @@ impl<'a> View<'a> {
             .map(crate::themes::argb);
         let label_size = tiles.map_or(8.0, |tiles| tiles.label_size);
         let label_box = tiles.and_then(|tiles| tiles.label_box);
+        let label_font_role = tiles.map_or("small", |tiles| tiles.label_font.name());
+        let label_font = theme.font(label_font_role, MEDIUM);
         let label_view = move |width: f32, height: f32| {
             container(
                 text(label.clone())
                     .size(label_size)
-                    .font(MEDIUM)
+                    .font(label_font)
                     .color(label_ink)
                     .wrapping(text::Wrapping::None),
             )
@@ -1723,11 +1741,16 @@ impl<'a> View<'a> {
                 _ => count_pill(theme, marks.badge, RAIL_COUNT, Some(theme.rail)),
             };
             layers = layers.push(
-                container(badge)
-                    .width(left + tile_width + BELOW)
-                    .height(tile_top + tile_height + BELOW)
-                    .align_x(Alignment::End)
-                    .align_y(Alignment::End),
+                container(crate::theme_effects::slot(
+                    badge,
+                    self.cx,
+                    yapfast_core::themes::package::Slot::Mention,
+                    Some(theme.rail),
+                ))
+                .width(left + tile_width + BELOW)
+                .height(tile_top + tile_height + BELOW)
+                .align_x(Alignment::End)
+                .align_y(Alignment::End),
             );
         }
         layers

@@ -91,6 +91,8 @@ pub enum Message {
     SystemTheme(iced::theme::Mode),
     /// The quarter-second owner-theme trial countdown.
     ThemeTrialTick(std::time::Instant),
+    /// Frame tick for declared `Slot::Accent` colour animations.
+    ThemeAccentTick(std::time::Instant),
     /// A retained conversation reached the end of its theme transition.
     ThemeTransitionDone(std::time::Instant),
     /// Nothing to do: a click a backdrop takes.
