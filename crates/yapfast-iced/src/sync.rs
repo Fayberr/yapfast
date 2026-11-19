@@ -714,6 +714,11 @@ impl App {
         };
         for item in &self.rail.items {
             want(item.icon.as_deref());
+            if let Some(crate::pictures::GroupIcon::Pair(pair)) = &item.group_icon {
+                for member in pair {
+                    want(Some(&member.avatar));
+                }
+            }
             if let crate::rail::Kind::Folder {
                 open: false,
                 preview,
@@ -737,6 +742,11 @@ impl App {
                 && top <= to
             {
                 want(room.avatar.as_deref());
+                if let Some(crate::pictures::GroupIcon::Pair(pair)) = &room.group_icon {
+                    for member in pair {
+                        want(Some(&member.avatar));
+                    }
+                }
                 want(room.status.emoji.as_deref());
                 want(room.decoration.as_deref());
                 want(room.tag.as_ref().and_then(|(_, badge)| badge.as_deref()));
@@ -820,7 +830,21 @@ impl App {
             want(self.sidebar.header.banner.as_deref());
         }
         want(self.header.avatar.as_deref());
+        if let Some(crate::pictures::GroupIcon::Pair(pair)) = &self.header.group_icon {
+            for member in pair {
+                want(Some(&member.avatar));
+            }
+        }
         want(self.account.status.emoji.as_deref());
+        for compose in [state.compose(), state.aside_compose()]
+            .into_iter()
+            .flatten()
+        {
+            let yapfast_core::application::Compose::Reply { emoji, .. } = compose;
+            for emoji in emoji {
+                want(Some(&emoji.picture));
+            }
+        }
         let (first, last) = self.timeline.in_view(MARGIN);
         let main = (first..last).map(|index| {
             (
@@ -835,6 +859,9 @@ impl App {
         for (message, look) in main.chain(aside) {
             if let Some(reply) = &message.reply {
                 want(reply.avatar.as_deref());
+                for emoji in &reply.emoji {
+                    want(Some(&emoji.picture));
+                }
             }
             if let Some(used) = &message.used {
                 want(used.avatar.as_deref());

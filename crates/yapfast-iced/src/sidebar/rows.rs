@@ -14,7 +14,11 @@ use yapfast_core::{
     network::Network,
 };
 
-use crate::{controls::count_badge, looks::Status, pictures::Icon};
+use crate::{
+    controls::count_badge,
+    looks::Status,
+    pictures::{GroupIcon, Icon, room_group_icon},
+};
 
 use super::{DM_ROW, GAP, HEADING, NAV_ROW, PERSON, ROW};
 
@@ -35,6 +39,7 @@ pub struct Room {
     /// A DM, with its picture, its person's presence and the line under it.
     pub direct: bool,
     pub avatar: Option<String>,
+    pub group_icon: Option<GroupIcon>,
     pub presence: Option<Presence>,
     pub status: Status,
     /// A DM's person's looks: the decoration round the avatar, the
@@ -56,6 +61,8 @@ pub struct Room {
     /// A thread under its channel, and whether another of its follows.
     pub thread: bool,
     pub thread_continues: bool,
+    /// A parent whose first visible thread follows it.
+    pub has_threads: bool,
     /// Who is in a voice channel, and since when (Unix seconds).
     pub people: Vec<VoicePerson>,
     pub started: Option<u64>,
@@ -330,6 +337,7 @@ pub fn sidebar(
     let (mut listed_text, mut listed_voice) = (false, false);
     // Whether the category the rows now come under is folded.
     let mut under_fold = false;
+    let mut previous_parent = None;
     for (index, room) in listed.iter().enumerate() {
         if !direct && index == 0 && in_pinned > 0 {
             rows.push(SideRow::Pinned);
@@ -398,6 +406,14 @@ pub fn sidebar(
         } else {
             Status::default()
         };
+        // Join consecutive visible rows only when they belong to the same tree.
+        if let Some(parent) = room.parent.as_deref()
+            && let Some(SideRow::Room(previous)) = rows.last_mut()
+        {
+            previous.thread_continues = previous_parent == Some(parent);
+            previous.has_threads = previous.id == parent;
+        }
+        previous_parent = room.parent.as_deref();
         rows.push(SideRow::Room(Box::new(Room {
             id: room.id.clone(),
             name: room.name.clone(),
@@ -420,6 +436,7 @@ pub fn sidebar(
             voice: room.voice,
             direct: room.direct,
             avatar: room.avatar.clone(),
+            group_icon: room_group_icon(room),
             // Discord sends the presence of friends and of those sharing a
             // server; anyone else in a one-to-one DM shows offline.
             presence: if room.person.is_some() && room.network == Network::Discord {
@@ -473,6 +490,7 @@ pub fn sidebar(
             pinned: room.direct && state.pinned.contains(&room.id),
             thread: room.parent.is_some(),
             thread_continues: false,
+            has_threads: false,
             people: if room.voice && !room.direct {
                 room.people.clone()
             } else {
@@ -496,17 +514,6 @@ pub fn sidebar(
                 .filter(|category| category.empty)
                 .map(empty_heading),
         );
-    }
-    // A channel's threads follow it, so a thread's line runs on to the next
-    // row when that's a thread too.
-    for index in 1..rows.len() {
-        let next_is_thread = matches!(&rows[index], SideRow::Room(room) if room.thread);
-        if let SideRow::Room(room) = &mut rows[index - 1]
-            && room.thread
-            && next_is_thread
-        {
-            room.thread_continues = true;
-        }
     }
     if !rows
         .iter()
