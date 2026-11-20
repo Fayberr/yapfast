@@ -28,6 +28,8 @@ impl App {
     pub fn view(&self) -> Element<'_, Message> {
         // Whatever this returns, what it no longer shows goes at its end.
         let _viewing = self.win.pictures.view();
+        // The dialogs centre in the window under its bar, and dim it.
+        crate::widgets::motion::set_bar(crate::window_bar::bar_height(self));
         if !crate::signin::workspace(self) {
             return self.frame_layers(crate::signin::view(self.ctx()));
         }
@@ -329,6 +331,10 @@ impl App {
         }
         if let Some(bar) = crate::window_bar::window_bar(self) {
             layers = layers.push(column![bar, Space::new().height(Length::Fill)]);
+            // What dims the window under the bar dims the bar.
+            layers = layers.push(crate::widgets::motion::bar_dim(
+                crate::window_bar::bar_height(self),
+            ));
         }
         if let Some(edges) = crate::window_bar::resize_edges(self) {
             layers = layers.push(edges);

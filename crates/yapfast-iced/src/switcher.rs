@@ -412,7 +412,7 @@ impl<'a> View<'a> {
         .spacing(5)
         .align_y(Alignment::Start);
         body = body.push(container(hint).padding(Padding::ZERO.top(12).left(1)));
-        let width = 684.0_f32.min(self.cx.look.window.width - 48.0);
+        let width = 680.0_f32.min(self.cx.look.window.width - 48.0);
         Some(dialog(theme, body.into(), width, message(Event::Close)))
     }
 

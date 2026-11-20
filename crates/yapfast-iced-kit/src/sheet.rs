@@ -33,7 +33,7 @@ pub const DIM: Color = Color {
     r: 0.0,
     g: 0.0,
     b: 0.0,
-    a: 0.7,
+    a: 0.72,
 };
 /// The pages' column and a page's row in it, as a channel's row.
 const NAV: f32 = 232.0;
@@ -365,8 +365,13 @@ pub fn backdrop<'a, M: Clone + 'a>(
         });
     opaque(stack![
         controls::dimmed(close, DIM),
+        // `margin` in from the whole window's edges, its top too, which the
+        // window's title bar covers.
         container(crate::widgets::motion::grow(opaque(card)))
-            .padding(margin)
+            .padding(iced::Padding {
+                top: (margin - crate::widgets::motion::bar()).max(0.0),
+                ..iced::Padding::new(margin)
+            })
             .center_x(Length::Fill)
             .height(Length::Fill)
     ])
