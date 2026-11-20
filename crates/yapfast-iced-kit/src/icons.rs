@@ -245,6 +245,8 @@ pub enum Icon {
     UserCircle,
     FolderPlus,
     CopyPlus,
+    /// Discord's sad face with a pin in it, for a channel without pins.
+    PinsEmpty,
 }
 
 impl Icon {
@@ -421,6 +423,7 @@ impl Icon {
             Icon::UserCircle => icon!("user-circle.svg"),
             Icon::FolderPlus => icon!("folder-plus.svg"),
             Icon::CopyPlus => icon!("copy-plus.svg"),
+            Icon::PinsEmpty => icon!("pins-empty.svg"),
             Icon::VideoOff => icon!("video-off.svg"),
             Icon::Maximize => icon!("maximize.svg"),
             Icon::Minimize => icon!("minimize.svg"),
