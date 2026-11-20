@@ -74,7 +74,7 @@ pub enum Layer {
 }
 
 /// Every layer, in the order they take keys and Escape.
-const LAYERS: [Layer; 43] = [
+const LAYERS: [Layer; 44] = [
     Layer::Inbox,
     Layer::Mfa,
     Layer::ManageAccounts,
@@ -485,6 +485,18 @@ impl App {
         }
         if named == Some(key::Named::Escape) {
             return self.escape();
+        }
+        if named == Some(key::Named::Tab)
+            && !modifiers.command()
+            && !modifiers.control()
+            && !modifiers.alt()
+            && crate::sidebar::destinations::visible(self.client.state())
+        {
+            return if modifiers.shift() {
+                operation::focus_previous()
+            } else {
+                operation::focus_next()
+            };
         }
         crate::composer::type_anywhere(self, &key, modifiers)
     }

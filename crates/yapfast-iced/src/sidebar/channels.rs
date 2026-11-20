@@ -58,6 +58,7 @@ impl<'a> super::View<'a> {
                 ..Padding::ZERO
             })
             .into(),
+            SideRow::Destinations => super::destinations::view(self.cx),
             SideRow::DmHeading => row![
                 text(tr("Direct Messages"))
                     .size(12)
