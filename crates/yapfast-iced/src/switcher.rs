@@ -296,10 +296,10 @@ impl Quick {
 }
 
 /// The list's height in a window `window` tall: the dialog at most
-/// 410 px, less its padding, the search, the heading over the list and the
-/// hint under it.
+/// 415 px (Discord's dialog, measured), less its padding, the search, the heading
+/// over the list and the hint under it.
 fn list_height(window: f32) -> f32 {
-    ((window - 48.0).min(410.0) - 2.0 * 20.0 - 70.0 - 52.0 - 12.0 - 32.0).max(PITCH)
+    ((window - 48.0).min(415.0) - 2.0 * 20.0 - 70.0 - 50.0 - 12.0 - 32.0).max(PITCH)
 }
 
 /// The quick switcher: a large search, Previous channels while it's
@@ -374,7 +374,7 @@ impl<'a> View<'a> {
                         .line_height(iced::Pixels(18.0))
                         .color(theme.secondary),
                 )
-                .padding(Padding::ZERO.top(27).bottom(7).left(1)),
+                .padding(Padding::ZERO.top(27).bottom(5).left(1)),
             );
         }
         let mut list = column![];

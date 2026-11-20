@@ -97,10 +97,11 @@ impl App {
             let shown = picker::view(picker, self.ctx());
             let size = picker.size();
             let place = match &picker.target {
-                // Over the emoji button, its right edge level with the button's.
+                // Over the composer, as Discord's (measured): its right edge 24 px
+                // in from the composer's, its foot 10 px over the composer's top.
                 Target::Composer => {
-                    let right = crate::conversation::chat_right(self) - 8.0 - 4.0;
-                    let bottom = crate::composer::composer_buttons_top(self) - 8.0;
+                    let right = crate::conversation::chat_right(self) - 8.0 - 24.0;
+                    let bottom = crate::composer::composer_buttons_top(self) - 22.0;
                     Place::new(shown, Point::new(right - size.width, bottom), 8.0)
                         .anchor(Anchor::Bottom)
                 }
