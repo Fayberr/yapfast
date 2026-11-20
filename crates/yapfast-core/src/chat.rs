@@ -3130,6 +3130,14 @@ pub enum DiscordCommand {
         user: String,
         room: String,
     },
+    /// Send a Discord friend the invite dialog's link to the channel by
+    /// its room id, as its Invite button does: in a message to their DM,
+    /// opening the DM if need be; [`Event::InviteSent`] follows.
+    SendInviteLink {
+        user: String,
+        room: String,
+        link: String,
+    },
     /// Look up an invite to a Discord server by its code, before joining
     /// by it; `typed` is what someone typed into Join a Server, if they
     /// did. [`Event::InviteResolved`] follows.
