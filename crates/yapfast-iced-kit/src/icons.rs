@@ -111,6 +111,8 @@ pub enum Icon {
     VoiceLock,
     VoiceWarning,
     Forum,
+    /// The sidebar's two overlapping round speech bubbles.
+    ForumBubbles,
     ForumLock,
     ForumWarning,
     Announcement,
@@ -131,6 +133,10 @@ pub enum Icon {
     HeadphoneOff,
     Settings,
     Community,
+    /// The server header's pink badge with a white house.
+    CommunityBadge,
+    /// Missing game artwork, a white die with a question mark.
+    UnknownGame,
     Verified,
     /// A scalloped badge, which holds a server's boost level.
     Scallop,
@@ -347,6 +353,7 @@ impl Icon {
             Icon::VoiceLock => icon!("volume-2-lock.svg"),
             Icon::VoiceWarning => icon!("volume-2-warning.svg"),
             Icon::Forum => icon!("message-square-text.svg"),
+            Icon::ForumBubbles => icon!("forum-bubbles.svg"),
             Icon::ForumLock => icon!("message-square-text-lock.svg"),
             Icon::ForumWarning => icon!("message-square-text-warning.svg"),
             Icon::Announcement => icon!("megaphone.svg"),
@@ -367,6 +374,8 @@ impl Icon {
             Icon::HeadphoneOff => icon!("headphone-off.svg"),
             Icon::Settings => icon!("settings.svg"),
             Icon::Community => icon!("community.svg"),
+            Icon::CommunityBadge => icon!("community-badge.svg"),
+            Icon::UnknownGame => icon!("unknown-game.svg"),
             Icon::Verified => icon!("verified.svg"),
             Icon::Scallop => icon!("scallop.svg"),
             Icon::CircleInfoFilled => icon!("circle-info-filled.svg"),
