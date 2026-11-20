@@ -487,7 +487,8 @@ impl<'a> View<'a> {
             theme.active
         };
         let hover = theme.hover;
-        button(line)
+        // The button keeps its content at the top: centre it in the row.
+        button(container(line).center_y(Length::Fill))
             .padding([0, 10])
             .height(PITCH)
             .width(Length::Fill)
