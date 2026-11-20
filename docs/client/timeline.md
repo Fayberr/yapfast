@@ -193,6 +193,9 @@ slash command, where one may write, is written in the composer
   four reactions used most, Add reaction, View Reactions, Edit, Reply,
   Forward, Copy text, Copy selection, End Poll Now (asked about in the poll's card), Pin or
   Unpin, Mark Unread, Copy Message Link, Delete and Copy Message ID.
+  It's drawn as Discord's: 280 px, 36 px rows with a 20 px icon and
+  semibold words, the reactions on 44 px tiles spread across its top, and
+  Add reaction with a chevron, though a click opens the picker.
   A right click on a link in its text adds Copy Link and Open Link, with
   the web address the link goes to, which a masked link's words don't say;
   a mention or one of Yapfast's own links adds none.
