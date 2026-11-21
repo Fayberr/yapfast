@@ -17,7 +17,7 @@ use crate::{
     browser,
     sidebar::{
         self,
-        destinations::{NITRO_URL, NitroTab, QuestTab, SEARCH, ShopTab},
+        destinations::{GIFT_CODE, NitroTab, QuestTab, SEARCH, ShopTab},
     },
 };
 
@@ -353,16 +353,16 @@ fn the_shop_search_says_when_nothing_matches() {
 }
 
 #[test]
-fn the_nitro_screen_has_its_tabs_and_hands_the_checkout_to_discord_com() {
+fn the_nitro_screen_has_its_tabs_and_sends_nobody_to_discord_com() {
     let (mut app, _folder) = preview();
     dm_home(&mut app);
     open(&mut app, "Nitro");
     assert!(shows(&app, "UNLOCK A WORLD OF PERKS WITH NITRO"));
+    // Yapfast has no checkout, so no button here sells or opens a page.
+    for sold in ["Upgrade", "Gift Nitro", "Get Nitro", "See Nitro Basic"] {
+        assert!(!shows(&app, sold), "{sold} has no checkout to open");
+    }
     assert!(browser::take_opened().is_empty());
-    interact(&mut app, |ui| {
-        ui.click("Upgrade").expect("the hero's button");
-    });
-    assert_eq!(browser::take_opened(), [NITRO_URL]);
 
     for (tab, event, heading) in [
         ("Perks", NitroTab::Perks, "In Yapfast"),
@@ -375,5 +375,42 @@ fn the_nitro_screen_has_its_tabs_and_hands_the_checkout_to_discord_com() {
         });
         assert_eq!(app.pages.nitro, event);
         assert!(shows(&app, heading), "{tab} shows {heading}");
+        for sold in ["Upgrade", "Gift Nitro", "Get Nitro", "See Nitro Basic"] {
+            assert!(!shows(&app, sold), "{tab} offers {sold}");
+        }
     }
+    assert!(browser::take_opened().is_empty());
+}
+
+#[test]
+fn a_gift_code_typed_on_the_nitro_screen_opens_its_gift_to_redeem() {
+    let (mut app, _folder) = preview();
+    dm_home(&mut app);
+    change(&mut app, |state| state.discord_online = true);
+    open(&mut app, "Nitro");
+
+    // Something that is no code leaves Redeem without a press.
+    interact(&mut app, |ui| {
+        ui.click(Id::new(GIFT_CODE)).expect("the gift code field");
+        ui.typewrite("nope");
+    });
+    assert_eq!(app.pages.code, "nope");
+    interact(&mut app, |ui| {
+        let _ = ui.click("Redeem");
+    });
+    assert!(app.client.state().gift.is_none());
+
+    // A gift link is read as its code, and its dialog takes over.
+    app.pages.code.clear();
+    interact(&mut app, |ui| {
+        ui.click(Id::new(GIFT_CODE)).expect("the gift code field");
+        ui.typewrite("https://discord.gift/2CG6SV9QtRxerJTgCYNDnU7M");
+    });
+    interact(&mut app, |ui| {
+        ui.click("Redeem").expect("Redeem");
+    });
+    let gift = app.client.state().gift.clone().expect("the gift's dialog");
+    assert_eq!(gift.code, "2CG6SV9QtRxerJTgCYNDnU7M");
+    assert!(app.pages.code.is_empty(), "the field is emptied");
+    assert!(browser::take_opened().is_empty());
 }

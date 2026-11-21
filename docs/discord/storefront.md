@@ -10,7 +10,8 @@ a linked account (they are absent in the preview and a server).
 Everything on them that can be done without paying is native, and nothing
 sends the user to discord.com. Yapfast has no checkout, so it does not sell
 anything for money: the Nitro screen shows what Nitro gives and whether the
-account has it, and the Shop shows a product priced only in money with its
+account has it and redeems a gift code or gift link typed into it (the gift's
+own dialog, as for a link in a chat), and the Shop shows a product priced only in money with its
 price and nothing to press. A product that costs Orbs is bought in Yapfast
 with the account's Orbs. Claiming a quest's reward is asked of Discord by
 Yapfast; when Discord wants a captcha first, its page opens in the browser as
@@ -21,7 +22,7 @@ goes on once it is solved.
 | --- | --- | --- |
 | Quests | All Quests, Claimed Quests | The list with the first quest as the wide banner, each card's picture, game, sponsor, end date, reward, task, progress and its game's link; accepting a quest; claiming a finished quest's reward |
 | Shop | Featured, Browse, Orbs Shop | Categories with banners, their products with pictures and prices, the account's Orbs, a search, one category alone; buying a product that costs Orbs |
-| Nitro | Home, Perks, Plans, Compare | What Nitro gives, whether the account has it, each server's boost level and progress, Free against Nitro |
+| Nitro | Home, Perks, Plans, Compare | What Nitro gives, whether the account has it, redeeming a gift code or link (`Action::OpenGiftLink`, `gift::from_text` reads the code out of what was typed), each server's boost level and progress, Free against Nitro |
 
 ## The data
 

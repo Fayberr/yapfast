@@ -1581,17 +1581,9 @@ msgstr "Discord sendet einen Code an dein Handy."
 msgid "Discord lists nothing to buy for your account at the moment."
 msgstr "Discord listet im Moment nichts zum Kaufen für dein Konto auf."
 
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Discord Nitro is a subscription that renews itself. You can cancel it any time in your settings."
-msgstr "Discord Nitro ist ein Abo, das sich selbst verlängert. Du kannst es jederzeit in deinen Einstellungen kündigen."
-
 #: crates/yapfast-iced/src/settings/pages/messages.rs
 msgid "Discord shows"
 msgstr "Discord zeigt"
-
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Discord shows the price for your country when you subscribe."
-msgstr "Discord zeigt dir den Preis für dein Land beim Abschließen an."
 
 #: crates/yapfast-iced/src/composer.rs
 msgid "Discord thinks {} may be spam"
@@ -2241,10 +2233,6 @@ msgstr "Gaming"
 msgid "Generate a new link"
 msgstr "Neuen Link erzeugen"
 
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Get Nitro"
-msgstr "Nitro holen"
-
 #: crates/yapfast-iced/src/settings/pages/about.rs
 msgid "Get the newest features before release. Expect some bugs."
 msgstr "Erhalte die neuesten Funktionen vor dem Release. Rechne mit einigen Fehlern."
@@ -2269,9 +2257,9 @@ msgstr "GIFs"
 msgid "Gift"
 msgstr "Geschenk"
 
-#: crates/yapfast-iced/src/sidebar/destinations/mod.rs crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Gift Nitro"
-msgstr "Nitro verschenken"
+#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
+msgid "Gift code or link"
+msgstr "Geschenkcode oder Link"
 
 #: crates/yapfast-iced/src/settings/pages/sounds.rs
 msgid "Glow"
@@ -2332,6 +2320,10 @@ msgstr "Hardwarebeschleunigung. Aus zeichnet Yapfast auf dem Prozessor, was etwa
 #: crates/yapfast-iced/src/search_filters.rs
 msgid "Has"
 msgstr "Hat"
+
+#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
+msgid "Have a gift code or a gift link? Redeem it here."
+msgstr "Du hast einen Geschenkcode oder einen Geschenklink? Löse ihn hier ein."
 
 #: crates/yapfast-iced/src/looks.rs crates/yapfast-iced/src/profile/name_style.rs
 msgid "Headbang"
@@ -3038,10 +3030,6 @@ msgstr "Mitglieder verwalten ({})"
 #: crates/yapfast-iced/src/app/screens.rs
 msgid "Manage Privacy"
 msgstr "Privatsphäre verwalten"
-
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Manage your subscription"
-msgstr "Abo verwalten"
 
 #: crates/yapfast-iced/src/server_settings/people.rs
 msgid "Manual Verification"
@@ -4427,6 +4415,14 @@ msgstr "Wiederherstellen"
 msgid "Recovery key"
 msgstr "Wiederherstellungsschlüssel"
 
+#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
+msgid "Redeem"
+msgstr "Einlösen"
+
+#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
+msgid "Redeem a gift"
+msgstr "Geschenk einlösen"
+
 #: crates/yapfast-iced/src/sidebar/destinations/quests.rs crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Refresh"
 msgstr "Aktualisieren"
@@ -4838,10 +4834,6 @@ msgstr "Sichere Verbindung"
 #: crates/yapfast-iced/src/server_settings/people.rs
 msgid "Security Actions"
 msgstr "Sicherheitsaktionen"
-
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "See Nitro Basic"
-msgstr "Nitro Basic ansehen"
 
 #: crates/yapfast-iced/src/settings/pages/discord.rs
 msgid "See {} more"
@@ -6195,10 +6187,6 @@ msgstr "Die Suche nach Updates ist ausgeschaltet."
 msgid "UPDATES"
 msgstr "UPDATES"
 
-#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Upgrade"
-msgstr "Upgrade"
-
 #: crates/yapfast-iced/src/profile/editor/card.rs
 msgid "Upgrade Nitro"
 msgstr "Nitro upgraden"
@@ -6681,6 +6669,10 @@ msgstr "Yapfast wechselt beim Neustart zur GPU. Ein Neustart beendet jeden Anruf
 msgid "Yapfast switches to the processor when it restarts. Restarting leaves any call."
 msgstr "Yapfast wechselt beim Neustart zum Prozessor. Ein Neustart beendet jeden Anruf."
 
+#: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
+msgid "Yapfast takes no payments. A gift code or a gift link starts a plan here."
+msgstr "Yapfast nimmt keine Zahlungen an. Ein Geschenkcode oder ein Geschenklink startet hier ein Abo."
+
 #: crates/yapfast-iced/src/settings/appearance.rs
 msgid "Yapfast theme"
 msgstr "Yapfast-Design"
@@ -6860,8 +6852,8 @@ msgid "You've been invited to join a server"
 msgstr "Du wurdest zu einem Server eingeladen"
 
 #: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
-msgid "Your account has Nitro. Billing and cancelling are in Settings."
-msgstr "Dein Konto hat Nitro. Abrechnung und Kündigung findest du in den Einstellungen."
+msgid "Your account has Nitro."
+msgstr "Dein Konto hat Nitro."
 
 #: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
 msgid "Your account has no Nitro. The plans below add perks."
