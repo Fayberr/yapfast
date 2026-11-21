@@ -553,6 +553,10 @@ msgstr "Beliebiger Inhalt"
 msgid "APP"
 msgstr "APP"
 
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "App Directory"
+msgstr "App-Verzeichnis"
+
 #: crates/yapfast-iced/src/settings/mod.rs
 msgid "App Settings"
 msgstr "App-Einstellungen"
@@ -1197,6 +1201,10 @@ msgstr "Nachrichtenlink kopieren"
 msgid "Copy selection"
 msgstr "Auswahl kopieren"
 
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Copy server ID"
+msgstr "Server-ID kopieren"
+
 #: crates/yapfast-iced/src/menus.rs
 msgid "Copy text"
 msgstr "Text kopieren"
@@ -1715,7 +1723,7 @@ msgstr "Rolle bearbeiten: {}"
 
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Edit server profile"
-msgstr "Serverprofil bearbeiten"
+msgstr "Serverspezifisches Profil bearbeiten"
 
 #: crates/yapfast-iced/src/server_settings/expressions.rs
 msgid "Edit Sticker"
@@ -2569,7 +2577,7 @@ msgstr "In Kanal einladen"
 
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Invite to server"
-msgstr "Auf Server einladen"
+msgstr "Zu Server einladen"
 
 #: crates/yapfast-iced/src/server_dialogs.rs
 msgid "Invited"
@@ -4942,6 +4950,10 @@ msgstr "Server-Bannliste"
 #: crates/yapfast-iced/src/server_settings/profile.rs
 msgid "SERVER BANNER BACKGROUND"
 msgstr "HINTERGRUND DES SERVERBANNERS"
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Server Boost"
+msgstr "Server-Boost"
 
 #: crates/yapfast-iced/src/looks.rs
 msgid "Server boosting since {}"

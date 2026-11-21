@@ -553,6 +553,10 @@ msgstr "Tout contenu"
 msgid "APP"
 msgstr "APP"
 
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "App Directory"
+msgstr "Répertoire des applications"
+
 #: crates/yapfast-iced/src/settings/mod.rs
 msgid "App Settings"
 msgstr "Paramètres de l'application"
@@ -1196,6 +1200,10 @@ msgstr "Copier le lien du message"
 #: crates/yapfast-iced/src/menus.rs
 msgid "Copy selection"
 msgstr "Copier la sélection"
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Copy server ID"
+msgstr "Copier l'identifiant du serveur"
 
 #: crates/yapfast-iced/src/menus.rs
 msgid "Copy text"
@@ -4942,6 +4950,10 @@ msgstr "Liste des bannis du serveur"
 #: crates/yapfast-iced/src/server_settings/profile.rs
 msgid "SERVER BANNER BACKGROUND"
 msgstr "ARRIÈRE-PLAN DE LA BANNIÈRE DU SERVEUR"
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Server Boost"
+msgstr "Boost de serveur"
 
 #: crates/yapfast-iced/src/looks.rs
 msgid "Server boosting since {}"

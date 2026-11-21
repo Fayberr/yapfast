@@ -573,7 +573,14 @@ The window follows Discord's arrangement:
   the Menu key or Shift+F10 open it too. A person with a plus, on the
   header's right, invites to the server. The dropdown lists the choices of the
   server's menu that Discord's dropdown has, in its order, from the same list
-  (`Application::header_choices`), so the two can't disagree. A Discord
+  (`Application::header_choices`), so the two can't disagree: Server Boost
+  (the boost summary) first, then invite, settings, create channel and
+  category, the App Directory (Discord's, in the browser), the channel list
+  and notification choices, one's own server profile, hiding muted channels,
+  leaving and, with Developer Mode on, Copy server ID, each group under a
+  line. It is 220px wide, centred under the header and 3px below it, and a
+  word it has no room for ends in "…" (a notification row shows no second
+  line there). A Discord
   channel list heads each category's channels with its name; a category
   without channels shows its heading alone, unless its permissions hide it.
   A right click on a heading, or the Menu key or Shift+F10 on it, opens the

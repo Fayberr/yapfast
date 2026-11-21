@@ -554,6 +554,10 @@ msgstr ""
 msgid "APP"
 msgstr ""
 
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "App Directory"
+msgstr ""
+
 #: crates/yapfast-iced/src/settings/mod.rs
 msgid "App Settings"
 msgstr ""
@@ -1196,6 +1200,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/menus.rs
 msgid "Copy selection"
+msgstr ""
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Copy server ID"
 msgstr ""
 
 #: crates/yapfast-iced/src/menus.rs
@@ -4942,6 +4950,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/server_settings/profile.rs
 msgid "SERVER BANNER BACKGROUND"
+msgstr ""
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgid "Server Boost"
 msgstr ""
 
 #: crates/yapfast-iced/src/looks.rs

@@ -198,12 +198,20 @@ fn a_servers_menu_shows_and_changes_its_notifications() {
     assert_eq!(
         labels(&app),
         [
+            "Server Boost",
+            "App Directory",
             "Notification settings",
             "Edit server profile",
             "Hide muted channels",
             "Leave server"
         ]
     );
+    // Its notification settings keep their levels but show no second line,
+    // and its menu is Discord's 220 px wide wherever its words would need
+    // more.
+    let menu = app.win.menu.as_ref().expect("the dropdown");
+    assert!(menu.rows[2].subtitle.is_none());
+    assert!(menu.fixed && menu.width == crate::menus::HEADER_WIDTH);
 }
 
 #[test]
