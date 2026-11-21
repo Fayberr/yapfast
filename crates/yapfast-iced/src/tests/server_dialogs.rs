@@ -345,7 +345,7 @@ fn browse_channels_opens_from_a_community_servers_list_and_searches() {
         .dispatch(Action::Navigate(Navigation::Server("discord:10".into())));
     let _ = app.sync();
     interact(&mut app, |ui| {
-        ui.click("Browse channels").expect("Browse channels");
+        ui.click("Channels & Roles").expect("Channels & Roles");
     });
     assert!(app.client.state().browse.is_some());
     assert!(shows(&app, "Browse Channels"));

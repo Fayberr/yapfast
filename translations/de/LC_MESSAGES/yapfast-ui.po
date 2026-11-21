@@ -770,8 +770,8 @@ msgid "Browse Channels"
 msgstr "Kanäle durchsuchen"
 
 #: crates/yapfast-iced/src/sidebar/channels.rs
-msgid "Browse channels"
-msgstr "Kanäle durchsuchen"
+msgid "Channels & Roles"
+msgstr "Kanäle & Rollen"
 
 #: crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Bundle"

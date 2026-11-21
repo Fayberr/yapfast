@@ -770,10 +770,6 @@ msgstr ""
 msgid "Browse Channels"
 msgstr ""
 
-#: crates/yapfast-iced/src/sidebar/channels.rs
-msgid "Browse channels"
-msgstr ""
-
 #: crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Bundle"
 msgstr ""
@@ -908,6 +904,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/suggest.rs
 msgid "CHANNELS"
+msgstr ""
+
+#: crates/yapfast-iced/src/sidebar/channels.rs
+msgid "Channels & Roles"
 msgstr ""
 
 #: crates/yapfast-iced/src/settings/pages/discord.rs

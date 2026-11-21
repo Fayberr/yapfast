@@ -469,7 +469,7 @@ channels in a server that hides them (`AppState::scoped_rooms`).
 
 ### Browse Channels
 
-A Community server's channel list starts with Browse channels, as
+A Community server's channel list starts with Channels & Roles, as
 Discord's client has it, which opens Browse Channels in place of the
 conversation: every text and voice channel the account sees, but threads,
 under its category's heading in the channel list's order, with a search of
