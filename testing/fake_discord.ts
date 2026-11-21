@@ -7822,7 +7822,9 @@ async function api(req: Request, path: string, origin: string): Promise<Response
       discoveryCaptcha = false;
     }
     if (discoveryJoins.some((join) => join.guild === m![1])) {
-      return json({ message: "You are already in this server.", code: 30001 }, 400);
+      // Discord's real answer to a repeat join is not known, so this carries no
+      // error code: 30001 is "too many servers" there, which the client maps.
+      return json({ message: "You are already in this server." }, 400);
     }
     discoveryJoins.push({
       guild: m[1],
