@@ -7811,8 +7811,6 @@ async function api(req: Request, path: string, origin: string): Promise<Response
     return json({ level: body.level });
   }
 
-  // A member's menu in "Server": nicknames, roles, timeouts, kicks and
-  // bans, as far as Alice's roles allow; see "Server members" above.
   // Joining from Discovery must be handled before looking up existing members.
   if (method === "PUT" && (m = path.match(/^\/guilds\/(\d+)\/members\/@me$/))) {
     if (!DISCOVERABLE.some((server) => server.id === m![1])) return notFound("Unknown Guild", 10004);
@@ -7833,6 +7831,8 @@ async function api(req: Request, path: string, origin: string): Promise<Response
     });
     return empty();
   }
+  // A member's menu in "Server": nicknames, roles, timeouts, kicks and
+  // bans, as far as Alice's roles allow; see "Server members" above.
   if ((m = path.match(/^\/guilds\/(\d+)\/(members|bans)\/(\d+|@me)(?:\/roles\/(\d+))?$/))) {
     if (m[1] !== GUILD) return notFound("Unknown Guild", 10004);
     const [kind, who, role] = [m[2]!, m[3]!, m[4]];

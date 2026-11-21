@@ -541,6 +541,8 @@ fn a_discover_search_is_asked_when_it_is_submitted_not_while_it_is_typed() {
     assert_eq!(app.client.state().discover.query, "", "nothing asked yet");
     assert!(!app.client.state().discover.loading);
     interact(&mut app, |ui| {
+        ui.click(Id::new(DISCOVER_SEARCH))
+            .expect("the search field");
         ui.tap_key(Key::Named(key::Named::Enter));
     });
     let page = &app.client.state().discover;

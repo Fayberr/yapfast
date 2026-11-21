@@ -690,7 +690,6 @@ fn the_profile_editor_names_its_boards_games_once() {
             name: "Unknown game".into(),
             ..Default::default()
         }],
-        ..Default::default()
     }];
     let profile = OwnProfile {
         fallback: Profile {
