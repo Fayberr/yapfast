@@ -721,7 +721,9 @@ pub fn label(choice: MenuChoice) -> &'static str {
         MenuChoice::EditNickname => tr("Change friend nickname"),
         MenuChoice::CloseDm => tr("Close DM"),
         MenuChoice::LeaveGroup => tr("Leave group"),
-        MenuChoice::InviteToServer => tr("Invite to server"),
+        // Discord's menu for someone says "Zu Server einladen", its server
+        // header's own row something else.
+        MenuChoice::InviteToServer => i18n::tr_ctx("user menu", "Invite to server"),
         MenuChoice::Apps => tr("Apps"),
         MenuChoice::Unfriend => tr("Remove friend"),
         MenuChoice::Ignore => tr("Ignore"),

@@ -32,6 +32,9 @@ const MENU_MARGIN: f32 = 8.0;
 /// A menu's width; the composer's and a message's are wider.
 pub const WIDTH: f32 = 224.0;
 pub const FIELD_WIDTH: f32 = 255.0;
+/// Someone's menu, as Discord's: as wide as its rows need, 177 px at the
+/// least.
+pub const PERSON_WIDTH: f32 = 177.0;
 /// A message's menu as Discord's: 280 px, its rows 36 px with a 20 px
 /// icon and a 16 px chevron, its quick reactions 44 px tiles with a 20 px
 /// emoji.
@@ -69,6 +72,10 @@ pub struct Menu {
     /// How its point is read, and its width.
     pub anchor: Anchor,
     pub width: f32,
+    /// Whether a row's icon stands alone: someone's menu as Discord draws
+    /// it has none but its Copy ID, and the rows without keep no room for
+    /// one.
+    pub lone_icons: bool,
     /// Someone in a call, by its room and their id: their voice menu, with
     /// their volumes over its rows while they're someone else.
     pub voice: Option<(String, String)>,
@@ -99,6 +106,7 @@ impl Menu {
             location: crate::person_menu::CONTEXT_MENU,
             anchor: Anchor::Pointer,
             width: WIDTH,
+            lone_icons: false,
             voice: None,
             volumes: None,
             sub: None,
@@ -109,9 +117,11 @@ impl Menu {
     }
 
     /// Whether its rows leave room for an icon or tick: a message's always,
-    /// others when a row has one.
+    /// others when a row has one, unless the icons stand alone.
     fn slot(&self) -> bool {
-        self.place.is_none() || ticks(&self.rows) || self.rows.iter().any(|row| row.icon.is_some())
+        self.place.is_none()
+            || ticks(&self.rows)
+            || (!self.lone_icons && self.rows.iter().any(|row| row.icon.is_some()))
     }
 
     /// How wide the menu (`None`) or row `sub`'s submenu shows.
@@ -141,6 +151,12 @@ impl Menu {
 
     pub fn width(mut self, width: f32) -> Self {
         self.width = width;
+        self
+    }
+
+    /// Its icons stand alone: a row without one keeps no room for it.
+    pub fn lone_icons(mut self) -> Self {
+        self.lone_icons = true;
         self
     }
 
@@ -1371,8 +1387,9 @@ fn fit(rows: &[MenuRow], slot: bool, message: bool) -> f32 {
         .ceil()
 }
 
-/// The narrowest a menu is, as Discord's.
-const MENU_NARROWEST: f32 = 188.0;
+/// The narrowest a menu is: someone's menu in Discord measures 177 px
+/// across with its widest row ("Zu Server einladen" and its arrow).
+const MENU_NARROWEST: f32 = 177.0;
 
 /// A row's padding at each side, the gap between its parts, and its
 /// checkbox, as [`App::menu_item`] draws them.

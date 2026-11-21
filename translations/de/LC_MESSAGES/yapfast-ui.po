@@ -3117,7 +3117,7 @@ msgstr "Mitglieder dürfen pro Intervall nur eine Nachricht senden und einen Thr
 
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Mention"
-msgstr "Erwähnen"
+msgstr "Erwähnung"
 
 #: crates/yapfast-iced/src/settings/pages/messages.rs
 msgid "Mention people you reply to"
@@ -7466,6 +7466,11 @@ msgstr "{month}/{day}/{year}"
 msgctxt "short date"
 msgid "{year}-{month}-{day}"
 msgstr "{year}-{month}-{day}"
+
+#: crates/yapfast-iced/src/place_menus.rs
+msgctxt "user menu"
+msgid "Invite to server"
+msgstr "Zu Server einladen"
 
 #: crates/yapfast-core/src/clock.rs
 msgctxt "weekday"

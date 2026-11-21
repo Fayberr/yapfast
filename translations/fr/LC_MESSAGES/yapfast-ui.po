@@ -7467,6 +7467,11 @@ msgctxt "short date"
 msgid "{year}-{month}-{day}"
 msgstr "{year}-{month}-{day}"
 
+#: crates/yapfast-iced/src/place_menus.rs
+msgctxt "user menu"
+msgid "Invite to server"
+msgstr "Inviter sur le serveur"
+
 #: crates/yapfast-core/src/clock.rs
 msgctxt "weekday"
 msgid "Friday"
