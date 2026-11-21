@@ -2497,10 +2497,6 @@ msgstr "Tu as un code cadeau ou un lien cadeau ? Utilise-le ici."
 msgid "Headbang"
 msgstr "Headbang"
 
-#: crates/yapfast-iced/src/window_bar.rs
-msgid "Help"
-msgstr "Aide"
-
 #: crates/yapfast-iced/src/members.rs
 msgid "Hide Activity Cards"
 msgstr "Masquer les cartes d'activité"
@@ -2727,10 +2723,6 @@ msgstr "SENSIBILITÉ D'ENTRÉE DANS LES APPELS DISCORD"
 msgid "Input Volume"
 msgstr "Volume d'entrée"
 
-#: crates/yapfast-iced/src/settings/pages/about.rs
-msgid "Install updates automatically"
-msgstr "Installer les mises à jour automatiquement"
-
 #: src/update/install.rs
 msgid "Installers are for Windows."
 msgstr "Les installateurs sont réservés à Windows."
@@ -2927,7 +2919,7 @@ msgstr "Garde votre voix stable quand vous vous penchez vers le micro ou vous en
 msgid "KEYBIND"
 msgstr "RACCOURCI"
 
-#: crates/yapfast-iced/src/settings/keybinds.rs crates/yapfast-iced/src/settings/mod.rs
+#: crates/yapfast-iced/src/settings/keybinds.rs crates/yapfast-iced/src/settings/mod.rs crates/yapfast-iced/src/window_bar.rs
 msgid "Keybinds"
 msgstr "Raccourcis clavier"
 
@@ -4003,10 +3995,6 @@ msgstr "Pas une couleur"
 msgid "Not all members are shown, use Search to find specific members"
 msgstr "Tous les membres ne sont pas affichés, utilisez la recherche pour trouver des membres précis"
 
-#: crates/yapfast-iced/src/settings/pages/about.rs
-msgid "Not available yet."
-msgstr "Pas encore disponible."
-
 #: crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Not enough Orbs"
 msgstr "Pas assez d'Orbs"
@@ -4230,10 +4218,6 @@ msgstr "Ouvrir le sélecteur de GIF"
 #: crates/yapfast-iced/src/image_viewer.rs
 msgid "Open in Browser"
 msgstr "Ouvrir dans le navigateur"
-
-#: crates/yapfast-iced/src/components.rs
-msgid "Open in Discord"
-msgstr "Ouvrir dans Discord"
 
 #: crates/yapfast-iced/src/thread.rs
 msgid "Open in full view"
@@ -6216,8 +6200,8 @@ msgid "This device"
 msgstr "Cet appareil"
 
 #: crates/yapfast-iced/src/bot_modal.rs
-msgid "This form has a part Yapfast can't fill yet. Use it in Discord."
-msgstr "Ce formulaire comporte une partie que Yapfast ne sait pas encore remplir. Utilisez-le dans Discord."
+msgid "This form has a part Yapfast does not know, so it can't be sent."
+msgstr "Ce formulaire contient un élément que Yapfast ne connaît pas, il ne peut donc pas être envoyé."
 
 #: crates/yapfast-iced/src/header_popovers.rs
 msgid "This group has no room for more."
@@ -6270,10 +6254,6 @@ msgstr "Ce lien mène à"
 #: crates/yapfast-iced/src/server_dialogs.rs
 msgid "This link {0}{1}."
 msgstr "Ce lien {0}{1}."
-
-#: crates/yapfast-iced/src/profile/full.rs
-msgid "This one only shows in Discord for now."
-msgstr "Pour l'instant, ceci n'apparaît que dans Discord."
 
 #: crates/yapfast-iced/src/server_settings/moderation.rs
 msgid "This option is not available for Community Servers."

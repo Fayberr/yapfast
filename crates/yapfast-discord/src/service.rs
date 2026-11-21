@@ -2909,8 +2909,8 @@ impl Discord {
         Ok(profile::recent_entries(&self.api.outbox(user).await?))
     }
 
-    /// Names a board's games and applications. What Discord doesn't say
-    /// stays as it is, and the board shows without it.
+    /// Names a board's games. What Discord doesn't say stays as it is, and
+    /// the board shows without it.
     pub async fn name_widgets(&self, widgets: &mut [crate::widgets::Widget]) {
         let mut games: Vec<&str> = widgets
             .iter()
@@ -2927,18 +2927,6 @@ impl Discord {
             }
         }
         crate::widgets::name_games(widgets, &known);
-        let applications: Vec<String> = widgets
-            .iter()
-            .filter_map(|widget| widget.application.clone())
-            .collect();
-        if applications.is_empty() {
-            return;
-        }
-        let ids: Vec<&str> = applications.iter().map(String::as_str).collect();
-        match self.api.public_applications(&ids).await {
-            Ok(answer) => crate::widgets::name_applications(widgets, &answer),
-            Err(error) => tracing::debug!(%error, "could not get a board's applications"),
-        }
     }
 
     /// The items on a wishlist, by the id a profile gave, as Discord's client

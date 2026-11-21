@@ -486,13 +486,6 @@ fn board_cards<'a>(
                 .align_y(Alignment::Center),
             );
         }
-        if !widget.lists_games {
-            card = card.push(
-                text(tr("This one only shows in Discord for now."))
-                    .size(12)
-                    .color(inks.ink3),
-            );
-        }
         list = list.push(
             container(card)
                 .padding(14)

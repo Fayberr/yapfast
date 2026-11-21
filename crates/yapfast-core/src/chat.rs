@@ -1009,11 +1009,7 @@ pub struct RecentActivity {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ProfileWidget {
     pub title: String,
-    /// The application it shows, whose name is its title once it's asked.
-    pub application: Option<String>,
     pub games: Vec<ProfileGame>,
-    /// It lists games, rather than something shown only in Discord.
-    pub lists_games: bool,
 }
 
 /// A game on a widget.
