@@ -2629,6 +2629,8 @@ impl Api {
 
     /// Sends a request for a file as [`Self::get_file`] does.
     async fn send_file(&self, request: RequestBuilder) -> Result<Response> {
+        // Keep the payload's byte offsets and advertised length for downloads.
+        let request = request.header(header::ACCEPT_ENCODING, "identity");
         let response = tokio::time::timeout(self.stall, request.send())
             .await
             .map_err(|_| Stalled)?
