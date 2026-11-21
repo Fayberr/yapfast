@@ -467,7 +467,7 @@ pub fn separator<'a, M: Clone + 'a>(theme: &Theme) -> Element<'a, M> {
 /// 17 px, its line 8 px down.
 pub fn menu_separator<'a, M: Clone + 'a>(theme: &Theme) -> Element<'a, M> {
     let line = if theme.bonfire {
-        crate::style::hex(0x35353a)
+        crate::style::hex(0x35353b)
     } else {
         theme.line
     };

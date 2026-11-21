@@ -142,12 +142,16 @@ impl Theme {
             } else {
                 self.raised
             },
-            menu_line: if dark {
+            menu_line: if self.bonfire {
+                crate::style::hex(0x35353b)
+            } else if dark {
                 mix(self.line, Color::BLACK, 0.95)
             } else {
                 self.line
             },
-            composer: if dark {
+            composer: if self.bonfire {
+                crate::style::hex(0x222327)
+            } else if dark {
                 mix(self.field, Color::WHITE, 0.99)
             } else {
                 self.field

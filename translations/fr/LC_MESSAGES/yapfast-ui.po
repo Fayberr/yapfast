@@ -154,12 +154,12 @@ msgid ">30d ago"
 msgstr "il y a plus de 30 jours"
 
 #: crates/yapfast-iced/src/composer.rs
-msgid "@ Off"
-msgstr "@ désactivé"
+msgid "@ OFF"
+msgstr "@ DÉSACTIVÉ"
 
 #: crates/yapfast-iced/src/composer.rs
-msgid "@ On"
-msgstr "@ activé"
+msgid "@ ON"
+msgstr "@ ACTIVÉ"
 
 #: crates/yapfast-iced/src/signin.rs
 msgid "@you:matrix.org"
@@ -4496,8 +4496,8 @@ msgid "Reply"
 msgstr "Répondre"
 
 #: crates/yapfast-iced/src/composer.rs
-msgid "Replying to "
-msgstr "Réponse à "
+msgid "Replying to"
+msgstr "Réponse à"
 
 #: crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/sidebar/channels.rs
 msgid "Requests"
@@ -6544,6 +6544,10 @@ msgstr "Liste de souhaits"
 #: crates/yapfast-iced/src/active_now.rs
 msgid "with {}"
 msgstr "avec {}"
+
+#: crates/yapfast-iced/src/composer.rs
+msgid "Would you like to follow this series of {} replies more easily?"
+msgstr "Voulez-vous suivre plus facilement cette série de {} réponses ?"
 
 #: crates/yapfast-iced/src/channel_settings.rs crates/yapfast-iced/src/server_dialogs.rs
 msgid "Would you like to sync {0} permissions with {1}?"
