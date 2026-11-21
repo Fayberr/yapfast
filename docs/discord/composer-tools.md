@@ -14,19 +14,13 @@ Both run inside Yapfast: nothing here opens a browser.
 
 ## The gift menu
 
-The menu reads `GET /users/@me/entitlements/gift-codes` each time it opens
-(`Action::LoadGifts`, one read at a time, `AppState.gifts`), so a gift bought
-a moment ago shows. It opens at once with one disabled line, "Loading your
-gifts", and follows the answer without closing (`Menu.gifts`, `gifts_sync`).
-Gifts used up by anyone are left out (`gift::Owned::list`). When there is
-nothing to give the menu says "You have no gifts to give"; when Discord could
-not be asked it says "Could not load your gifts" with the reason, and opening
-the menu again asks again. A failed read keeps the list read before.
-
-Yapfast buys no gift. The gifts listed were bought in Discord's apps, since a
-purchase takes a payment source Yapfast has no screen for. This is why the
-menu has no "Buy a gift" row and no link to a store: a button that only sends
-the person to discord.com is not offered.
+The menu reads `GET /users/@me/entitlements/gifts` each time it opens
+(`Action::LoadGifts`, one read at a time, `AppState.gifts`). This returns
+giftable entitlements. For each distinct SKU and subscription plan it then
+reads `GET /users/@me/entitlements/gift-codes?sku_id=…`, including the plan ID
+when available. Only existing, unexpired codes with remaining uses appear.
+The menu shows loading, empty or error text as appropriate (`Menu.gifts`,
+`gifts_sync`). HTTP failures include the status. Reopening retries the read.
 
 Choosing a gift checks that the room is still the one the menu opened over
 and still writable before it inserts the link, so a stale menu cannot write
@@ -52,10 +46,12 @@ expression picker first. Neither button changes a draft by itself.
 
 ## Unverified
 
-The shape of `GET /users/@me/entitlements/gift-codes` is read as a list of
-gift code objects, as `docs.discord.food` documents, and checked only against
-the fake server (`testing/fake_discord.ts`); it has not been run against
-Discord. A code is listed as given away when its `uses` reached `max_uses`.
+The entitlement and code response shapes follow the
+[entitlements reference](https://docs.discord.food/resources/entitlement)
+and the per-SKU query follows
+[discord.py-self's implementation](https://github.com/dolfies/discord.py-self/blob/master/discord/http.py).
+Live account behavior, including whether all SKUs with existing codes still
+appear in the giftable inventory, is unverified.
 
 ## Tests
 

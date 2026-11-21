@@ -1551,7 +1551,14 @@ pub(super) fn command(
                                 error = format!("{error:#}"),
                                 "could not list the gifts to give"
                             );
-                            format!("Couldn't load your gifts: {error}")
+                            use crate::i18n::{fill, tr};
+                            if let Some(refused) =
+                                error.downcast_ref::<yapfast_discord::api::Refused>()
+                            {
+                                fill(tr("Discord returned HTTP {}."), &[&refused.0.as_u16()])
+                            } else {
+                                tr("Discord's gift inventory could not be read.").to_owned()
+                            }
                         });
                     let _ = events.send(Event::GiftsLoaded { result });
                 });

@@ -107,17 +107,14 @@ fn gift_rows(gifts: &GiftInventory, room: &str) -> Vec<MenuRow> {
         subtitle: subtitle.map(Into::into),
         ..MenuRow::new(MenuAct::GiftLink, label, Icon::Gift)
     };
-    if !gifts.loaded {
-        return vec![match &gifts.error {
-            Some(error) => line(tr("Could not load your gifts"), Some(error.clone())),
-            None => line(tr("Loading your gifts"), None),
-        }];
+    if let Some(error) = &gifts.error {
+        return vec![line(tr("Could not load your gifts"), Some(error.clone()))];
+    }
+    if gifts.loading || !gifts.loaded {
+        return vec![line(tr("Loading your gifts"), None)];
     }
     if gifts.gifts.is_empty() {
-        return vec![line(
-            tr("You have no gifts to give"),
-            Some(tr("Gifts bought in Discord's apps are listed here").to_owned()),
-        )];
+        return vec![line(tr("You have no gifts to give"), None)];
     }
     gifts
         .gifts
