@@ -10,15 +10,17 @@ a linked account (they are absent in the preview and a server).
 Everything on them that can be done without paying is native, and nothing
 sends the user to discord.com. Yapfast has no checkout, so it does not sell
 anything for money: the Nitro screen shows what Nitro gives and whether the
-account has it, and the Shop shows prices without a way to pay them. Claiming
-a quest's reward is asked of Discord by Yapfast; when Discord wants a
-captcha first, its page opens in the browser as [linking](README.md#account-linking)
-and joining a server do, and the claim goes on once it is solved.
+account has it, and the Shop shows a product priced only in money with its
+price and nothing to press. A product that costs Orbs is bought in Yapfast
+with the account's Orbs. Claiming a quest's reward is asked of Discord by
+Yapfast; when Discord wants a captcha first, its page opens in the browser as
+[linking](README.md#account-linking) and joining a server do, and the claim
+goes on once it is solved.
 
 | Screen | Tabs | Native |
 | --- | --- | --- |
 | Quests | All Quests, Claimed Quests | The list with the first quest as the wide banner, each card's picture, game, sponsor, end date, reward, task, progress and its game's link; accepting a quest; claiming a finished quest's reward |
-| Shop | Featured, Browse, Orbs Shop | Categories with banners, their products with pictures and prices, the account's Orbs, a search, one category alone |
+| Shop | Featured, Browse, Orbs Shop | Categories with banners, their products with pictures and prices, the account's Orbs, a search, one category alone; buying a product that costs Orbs |
 | Nitro | Home, Perks, Plans, Compare | What Nitro gives, whether the account has it, each server's boost level and progress, Free against Nitro |
 
 ## The data
@@ -38,6 +40,7 @@ none.
 | `POST /quests/{id}/claim-reward` | Claiming a finished quest's reward (`Action::ClaimQuest`); `errors` in the answer is the reason it failed |
 | `GET /collectibles-categories` | The Shop's categories and products |
 | `GET /users/@me/virtual-currency/balance` | The Orbs in the Shop's header |
+| `POST /virtual-currency/skus/{sku}/redeem` | Buying a product with Orbs (`Action::BuyProduct`); no money is involved |
 
 Both parsers read defensively: a field Discord has changed or left out loses
 that field (a price, a picture), not the list. A product's price is shown as
@@ -56,6 +59,16 @@ the loopback address and opened in the browser (`Event::QuestCaptcha`,
 server), kept in `QuestsPage::captcha`, and the claim is sent again with the
 solution. Some rewards need more than a claim (a shipping address); Discord
 then refuses with its reason, which the page shows.
+
+A product that costs Orbs shows **Buy** under its price. Pressing it asks
+once more (`Pages::confirm`, "Buy for N" with Cancel beside it), because the
+Orbs are spent for good; the second press sends `Action::BuyProduct`. The core
+refuses it, asking Discord nothing, when the account's Orbs, as Discord last
+said, fall short (`ShopPage::refused` says so), when the SKU is already being
+bought (`ShopPage::buying`, the button reading "Buying") or was bought in this
+run (`ShopPage::bought`, "Bought"), and for a product that Orbs do not buy.
+When Discord answers, the Shop is read again, so the Orbs shown are Discord's.
+A product priced only in money is never offered for purchase.
 
 ## The screens
 
@@ -77,14 +90,18 @@ with a Retry; unlinked or in the preview it asks to link the account.
   (loading on open, accepting, claiming with a captcha, the double press, errors).
 - `yapfast-discord`: the parsers' unit tests and `tests/fake_server/storefront.rs`,
   against `testing/fake_discord.ts` (three quests, one claimed, two shop
-  categories, 550 Orbs; `/_control/quest-enrollments` shows what was accepted).
+  categories, 550 Orbs; `/_control/quest-enrollments` shows what was accepted,
+  `/_control/orb-purchases` what was bought with Orbs).
 - `yapfast-iced`: `tests/dm_destinations.rs` clicks through every screen: the
-  tabs, accepting a quest, the claim, the Shop's search, and the sidebar at
-  each width.
+  tabs, accepting a quest, the claim, the Shop's search, buying with Orbs after
+  the second press, and the sidebar at each width.
 
 ## Not done
 
 Paying money (Nitro, gifts, boosts, products priced in money): Yapfast has no
 checkout and sends nobody to discord.com for one, so the screens only show
-what Discord lists. The price and Orbs shapes have not been checked against a
-real account. The Shop shows no product page of its own.
+what Discord lists. The price and Orbs shapes, and the Orbs purchase request
+(`POST /virtual-currency/skus/{sku}/redeem` with a `checkout_session_id`), have
+not been checked against a real account, and which products Discord lets Orbs
+buy is read from the prices it lists (a currency named like an Orb). The Shop
+shows no product page of its own.

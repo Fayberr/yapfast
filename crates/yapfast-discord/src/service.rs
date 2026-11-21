@@ -3300,6 +3300,12 @@ impl Discord {
         Ok((categories, orbs))
     }
 
+    /// Buys the Shop product with this SKU with Orbs; see
+    /// [`Api::buy_with_orbs`].
+    pub async fn buy_with_orbs(&self, sku: &str) -> Result<()> {
+        self.api.buy_with_orbs(sku).await.map(drop)
+    }
+
     /// What authorizing the application `request` names would do; see
     /// [`Api::oauth_preview`].
     pub async fn oauth_preview(&self, request: &oauth::Request) -> Result<oauth::Preview> {

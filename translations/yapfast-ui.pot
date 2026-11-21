@@ -770,6 +770,10 @@ msgstr ""
 msgid "Bot Invite"
 msgstr ""
 
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Bought"
+msgstr ""
+
 #: crates/yapfast-iced/src/server_settings/expressions.rs crates/yapfast-iced/src/sidebar/destinations/mod.rs
 msgid "Browse"
 msgstr ""
@@ -780,6 +784,18 @@ msgstr ""
 
 #: crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Bundle"
+msgstr ""
+
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Buy"
+msgstr ""
+
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Buy for {}"
+msgstr ""
+
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Buying"
 msgstr ""
 
 #: crates/yapfast-iced/src/channel_settings.rs
@@ -810,7 +826,7 @@ msgstr ""
 msgid "CAMERAS"
 msgstr ""
 
-#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/call/dm.rs crates/yapfast-iced/src/channel_settings.rs crates/yapfast-iced/src/dialogs.rs crates/yapfast-iced/src/friends/requests.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/message/mod.rs crates/yapfast-iced/src/mfa.rs crates/yapfast-iced/src/person_menu.rs crates/yapfast-iced/src/polls.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/server_settings/expressions.rs crates/yapfast-iced/src/server_settings/people.rs crates/yapfast-iced/src/server_settings/roles/members.rs crates/yapfast-iced/src/server_settings/roles/mod.rs crates/yapfast-iced/src/settings/appearance.rs crates/yapfast-iced/src/settings/pages/games.rs crates/yapfast-iced/src/settings/updates.rs crates/yapfast-iced/src/status.rs crates/yapfast-iced/src/switcher.rs
+#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/call/dm.rs crates/yapfast-iced/src/channel_settings.rs crates/yapfast-iced/src/dialogs.rs crates/yapfast-iced/src/friends/requests.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/message/mod.rs crates/yapfast-iced/src/mfa.rs crates/yapfast-iced/src/person_menu.rs crates/yapfast-iced/src/polls.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/server_settings/expressions.rs crates/yapfast-iced/src/server_settings/people.rs crates/yapfast-iced/src/server_settings/roles/members.rs crates/yapfast-iced/src/server_settings/roles/mod.rs crates/yapfast-iced/src/settings/appearance.rs crates/yapfast-iced/src/settings/pages/games.rs crates/yapfast-iced/src/settings/updates.rs crates/yapfast-iced/src/sidebar/destinations/shop.rs crates/yapfast-iced/src/status.rs crates/yapfast-iced/src/switcher.rs
 msgid "Cancel"
 msgstr ""
 
@@ -3720,6 +3736,10 @@ msgstr ""
 msgid "Not available yet."
 msgstr ""
 
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Not enough Orbs"
+msgstr ""
+
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Not sending"
 msgstr ""
@@ -4268,6 +4288,10 @@ msgstr ""
 msgid "Private Thread"
 msgstr ""
 
+#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
+msgid "Products that cost Orbs are bought here. Products priced in money are for looking at."
+msgstr ""
+
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Profile"
 msgstr ""
@@ -4302,10 +4326,6 @@ msgstr ""
 
 #: crates/yapfast-iced/src/header_popovers.rs crates/yapfast-iced/src/switcher.rs
 msgid "Protip:"
-msgstr ""
-
-#: crates/yapfast-iced/src/sidebar/destinations/shop.rs
-msgid "Purchases are completed on discord.com. A product opens its page there."
 msgstr ""
 
 #: crates/yapfast-iced/src/settings/voice.rs

@@ -178,9 +178,24 @@ pub struct ShopPage {
     pub loading: bool,
     pub loaded: bool,
     pub error: Option<String>,
+    /// The products being bought with Orbs, by SKU, until Discord answers.
+    pub buying: Vec<String>,
+    /// The products bought in this run, by SKU.
+    pub bought: Vec<String>,
+    /// Why the last purchase didn't go through.
+    pub refused: Option<String>,
 }
 
 impl ShopPage {
+    /// The Orbs a product costs, if Orbs buy it.
+    pub fn cost(&self, sku: &str) -> Option<u64> {
+        self.categories
+            .iter()
+            .flat_map(|category| &category.products)
+            .find(|product| product.sku == sku)
+            .and_then(|product| product.orbs)
+    }
+
     /// The products whose name or summary holds `query`, in the order the
     /// categories list them; every product for an empty query.
     pub fn search(&self, query: &str) -> Vec<&Product> {

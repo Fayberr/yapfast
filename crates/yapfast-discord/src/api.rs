@@ -793,6 +793,16 @@ impl Api {
             .await
     }
 
+    /// Buys a Shop product with Orbs, as the checkout does when the account
+    /// pays with them: the entitlements it now has. Nothing is charged in
+    /// money, and Discord refuses when the Orbs fall short.
+    pub async fn buy_with_orbs(&self, sku: &str) -> Result<Value> {
+        let path = format!("/virtual-currency/skus/{}/redeem", encode(sku));
+        let body = json!({"checkout_session_id": crate::client::uuid(0)});
+        self.json(with_json(self.request(Method::POST, &path), &body))
+            .await
+    }
+
     /// How many Orbs this account holds: `{balance}`.
     pub async fn orbs_balance(&self) -> Result<Value> {
         self.json(self.request(Method::GET, "/users/@me/virtual-currency/balance"))

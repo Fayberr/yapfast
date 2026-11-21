@@ -130,3 +130,38 @@ async fn lists_the_shop_with_prices_and_orbs() {
     assert_eq!(lofi.products[0].orbs, Some(1200));
     assert!(lofi.products[0].price.is_none());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "starts testing/fake_discord.ts with bun; run scripts/test-fake-discord"]
+async fn buys_a_product_with_orbs_and_the_orbs_fall() {
+    let Fixture {
+        _fake,
+        discord,
+        server,
+        ..
+    } = Fixture::start("buys_a_product_with_orbs_and_the_orbs_fall").await;
+
+    let (categories, orbs) = discord.shop().await.unwrap();
+    assert_eq!(orbs, Some(550));
+    let star = &categories[1].products[2];
+    assert_eq!((star.name.as_str(), star.orbs), ("Tiny Star", Some(300)));
+    let cosy = &categories[1].products[0];
+    assert_eq!(cosy.orbs, Some(1200));
+
+    // Too dear for the Orbs the account has: Discord refuses, nothing is spent.
+    assert!(discord.buy_with_orbs(&cosy.sku).await.is_err());
+    // A SKU Discord doesn't know is refused too.
+    assert!(discord.buy_with_orbs("1").await.is_err());
+    let (_, orbs) = discord.shop().await.unwrap();
+    assert_eq!(orbs, Some(550));
+
+    discord.buy_with_orbs(&star.sku).await.unwrap();
+    let (_, orbs) = discord.shop().await.unwrap();
+    assert_eq!(orbs, Some(250));
+    let bought: serde_json::Value =
+        serde_json::from_str(&control(server, "GET", "/_control/orb-purchases", "")).unwrap();
+    let bought = bought.as_array().unwrap();
+    assert_eq!(bought.len(), 1);
+    assert_eq!(bought[0]["sku"], star.sku.as_str());
+    assert_eq!(bought[0]["checkout"], true);
+}

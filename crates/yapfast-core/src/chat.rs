@@ -3213,6 +3213,11 @@ pub enum DiscordCommand {
     /// Load the Shop screen's categories and this account's Orbs.
     /// [`Event::ShopLoaded`] follows.
     LoadShop,
+    /// Buy the Shop product with this SKU with Orbs.
+    /// [`Event::ProductBought`] follows.
+    BuyProduct {
+        sku: String,
+    },
     /// Look up a Discord gift by its code, before offering to redeem
     /// it. [`Event::GiftResolved`] follows.
     ResolveGift {
@@ -4778,6 +4783,12 @@ pub enum Event {
     /// quest with this id, or why it didn't.
     QuestClaimed {
         id: String,
+        result: Result<(), String>,
+    },
+    /// Whether [`DiscordCommand::BuyProduct`] bought the product with this
+    /// SKU, or why it didn't.
+    ProductBought {
+        sku: String,
         result: Result<(), String>,
     },
     /// The Shop's categories and this account's Orbs that

@@ -5185,6 +5185,16 @@ const questStatus = new Map<string, Record<string, unknown> | null>([
   ["9100000000000000003", { user_id: "0", quest_id: "9100000000000000003", enrolled_at: "2026-11-18T10:00:00+00:00", completed_at: "2026-11-19T10:00:00+00:00", claimed_at: null, progress: {} }],
 ]);
 const ORBS = 550;
+/** The Orbs Alice has spent in the Shop, and each purchase, oldest first,
+ *  for GET /_control/orb-purchases. */
+let orbsSpent = 0;
+const orbPurchases: Record<string, unknown>[] = [];
+/** What each Orbs product of the Shop costs, by SKU. */
+const ORB_PRICES = new Map<string, number>([
+  ["9200000000000000021", 1200],
+  ["9200000000000000022", 1800],
+  ["9200000000000000023", 300],
+]);
 function wireQuest(id: string, name: string, game: string, publisher: string, task: string, target: number, reward: Record<string, unknown>) {
   return {
     id,
@@ -8138,11 +8148,24 @@ async function api(req: Request, path: string, origin: string): Promise<Response
         products: [
           shopProduct("9200000000000000021", "Cosy Cat", 0, { amount: 1200, currency: "discord_orb", exponent: 0 }, origin),
           shopProduct("9200000000000000022", "Moon Oasis", 1, { amount: 1800, currency: "discord_orb", exponent: 0 }, origin),
+          shopProduct("9200000000000000023", "Tiny Star", 0, { amount: 300, currency: "discord_orb", exponent: 0 }, origin),
         ],
       },
     ]);
   }
-  if (method === "GET" && path === "/users/@me/virtual-currency/balance") return json({ balance: ORBS });
+  if (method === "GET" && path === "/users/@me/virtual-currency/balance") return json({ balance: ORBS - orbsSpent });
+  // Buying an Orbs product with Orbs: refused without the Orbs for it, or
+  // for one that Orbs don't buy; nothing is charged in money.
+  if (method === "POST" && (m = path.match(/^\/virtual-currency\/skus\/(\d+)\/redeem$/))) {
+    const sku = m[1]!;
+    const body: any = await req.json().catch(() => ({}));
+    const cost = ORB_PRICES.get(sku);
+    if (cost === undefined) return json({ message: "Unknown SKU", code: 10000 }, 404);
+    if (ORBS - orbsSpent < cost) return json({ message: "Insufficient virtual currency balance", code: 100000 }, 400);
+    orbsSpent += cost;
+    orbPurchases.push({ sku, cost, checkout: typeof body.checkout_session_id === "string" });
+    return json([{ id: `${sku}01`, sku_id: sku, type: 1 }]);
+  }
 
   // Apps' commands, once Alice types "/"; see "Commands" in the header.
   const commandIndex = commandIndexRoute(method, path);
@@ -9986,6 +10009,9 @@ const server = Bun.serve<SocketData>({
     }
     if (req.method === "GET" && path === "/_control/quest-claims") {
       return Response.json(questClaims);
+    }
+    if (req.method === "GET" && path === "/_control/orb-purchases") {
+      return Response.json(orbPurchases);
     }
     if (req.method === "GET" && path === "/_control/gift-redeems") {
       return Response.json(giftRedeems);

@@ -17,7 +17,7 @@ use crate::{
     browser,
     sidebar::{
         self,
-        destinations::{NITRO_URL, NitroTab, QuestTab, SEARCH, SHOP_URL, ShopTab},
+        destinations::{NITRO_URL, NitroTab, QuestTab, SEARCH, ShopTab},
     },
 };
 
@@ -70,6 +70,16 @@ fn product(sku: &str, name: &str) -> Product {
     }
 }
 
+/// A product that costs Orbs and no money.
+fn orbs_product(sku: &str, name: &str, cost: u64) -> Product {
+    Product {
+        sku: sku.into(),
+        name: name.into(),
+        orbs: Some(cost),
+        ..Product::default()
+    }
+}
+
 /// Discord's answers, as the core holds them once they have come.
 fn stocked(app: &mut App) {
     change(app, |state| {
@@ -92,7 +102,7 @@ fn stocked(app: &mut App) {
                 Category {
                     sku: "c2".into(),
                     name: "Lo-fi vibes".into(),
-                    products: vec![product("p3", "Rain")],
+                    products: vec![orbs_product("p3", "Rain", 400)],
                     ..Category::default()
                 },
             ],
@@ -239,7 +249,7 @@ fn the_quests_screen_says_when_discord_lists_none() {
 }
 
 #[test]
-fn the_shop_shows_categories_searches_and_opens_products_on_discord_com() {
+fn the_shop_shows_categories_searches_and_lists_money_products_without_a_checkout() {
     let (mut app, _folder) = preview();
     dm_home(&mut app);
     stocked(&mut app);
@@ -248,10 +258,12 @@ fn the_shop_shows_categories_searches_and_opens_products_on_discord_com() {
     assert!(shows(&app, "550"), "the account's Orbs");
     assert!(shows(&app, "Palm"));
 
+    // A product priced in money has its price and nothing to press: Yapfast
+    // has no checkout, and nothing sends the reader to discord.com either.
     interact(&mut app, |ui| {
         ui.click("Palm").expect("a product");
     });
-    assert_eq!(browser::take_opened(), [format!("{SHOP_URL}#itemSkuId=p1")]);
+    assert!(browser::take_opened().is_empty());
 
     interact(&mut app, |ui| {
         ui.click("Shop the collection")
@@ -275,6 +287,56 @@ fn the_shop_shows_categories_searches_and_opens_products_on_discord_com() {
     assert!(shows(&app, "Results for neon"));
     assert!(shows(&app, "Neon plate"));
     assert!(!shows(&app, "Rain"));
+}
+
+#[test]
+fn an_orbs_product_is_bought_in_yapfast_after_a_second_press() {
+    let (mut app, _folder) = preview();
+    dm_home(&mut app);
+    stocked(&mut app);
+    open(&mut app, "Shop");
+    assert!(!shows(&app, "Buy for 400"));
+    interact(&mut app, |ui| {
+        ui.click("Buy").expect("the Buy button of the Orbs product");
+    });
+    assert_eq!(app.pages.confirm.as_deref(), Some("p3"));
+    assert!(
+        app.client.state().shop.buying.is_empty(),
+        "one press buys nothing"
+    );
+    assert!(shows(&app, "Buy for 400"));
+
+    interact(&mut app, |ui| {
+        ui.click("Cancel").expect("Cancel");
+    });
+    assert_eq!(app.pages.confirm, None);
+    assert!(!shows(&app, "Buy for 400"));
+
+    interact(&mut app, |ui| {
+        ui.click("Buy").expect("Buy");
+    });
+    interact(&mut app, |ui| {
+        ui.click("Buy for 400").expect("the confirming press");
+    });
+    assert_eq!(app.pages.confirm, None);
+    assert_eq!(app.client.state().shop.buying, ["p3"]);
+    assert!(shows(&app, "Buying"), "no second purchase while it waits");
+    assert!(
+        browser::take_opened().is_empty(),
+        "buying is asked of Discord by Yapfast, not sent to discord.com"
+    );
+}
+
+#[test]
+fn a_product_costing_more_orbs_than_the_account_has_cannot_be_bought() {
+    let (mut app, _folder) = preview();
+    dm_home(&mut app);
+    stocked(&mut app);
+    change(&mut app, |state| state.shop.orbs = Some(399));
+    open(&mut app, "Shop");
+    assert!(shows(&app, "Not enough Orbs"));
+    assert!(!shows(&app, "Buy"));
+    assert!(app.client.state().shop.buying.is_empty());
 }
 
 #[test]

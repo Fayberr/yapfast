@@ -29,7 +29,6 @@ mod quests;
 mod shop;
 
 pub const NITRO_URL: &str = "https://discord.com/nitro";
-pub const SHOP_URL: &str = "https://discord.com/shop";
 
 /// The search field's id in the Shop's header.
 pub const SEARCH: &str = "shop-search";
@@ -50,6 +49,9 @@ pub struct Pages {
     pub search: String,
     /// The category the Shop's Browse tab shows alone, by its SKU.
     pub category: Option<String>,
+    /// The product whose Buy was pressed once, by its SKU, until it is
+    /// pressed again to confirm or cancelled.
+    pub confirm: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -88,6 +90,10 @@ pub enum Event {
     Accept(String),
     /// Claims the reward of the finished quest with this id.
     Claim(String),
+    /// Asks to confirm buying the product with this SKU, or drops it.
+    Confirm(Option<String>),
+    /// Buys the product with this SKU with Orbs.
+    Buy(String),
     /// Asks Discord for the open screen's list again.
     Refresh,
 }
@@ -109,6 +115,11 @@ pub fn update(app: &mut App, event: Event) -> Task<Message> {
         Event::Search(query) => app.pages.search = query,
         Event::Accept(id) => app.client.dispatch(Action::AcceptQuest(id)),
         Event::Claim(id) => app.client.dispatch(Action::ClaimQuest(id)),
+        Event::Confirm(sku) => app.pages.confirm = sku,
+        Event::Buy(sku) => {
+            app.pages.confirm = None;
+            app.client.dispatch(Action::BuyProduct(sku));
+        }
         Event::Refresh => match crate::friends::dm_screen(app) {
             Some(DmScreen::Quests) => app.client.dispatch(Action::RefreshQuests),
             Some(DmScreen::Shop) => app.client.dispatch(Action::RefreshShop),

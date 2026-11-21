@@ -2,7 +2,8 @@
 //! opens, refreshed when asked, and the one thing the Quests screen does
 //! itself: accepting a quest, and claiming a finished quest's reward, which
 //! may ask for a captcha that the browser shows, as joining a server does.
-//! What needs Discord's own checkout, paying money, Yapfast doesn't offer.
+//! The Shop's products that cost Orbs are bought here too. What needs
+//! Discord's own checkout, paying money, Yapfast doesn't offer.
 
 use super::*;
 use crate::storefront::{Category, Quest, QuestStatus};
@@ -128,6 +129,48 @@ impl Application {
             }
             Err(error) => {
                 page.error = Some(error);
+                vec![]
+            }
+        }
+    }
+
+    /// Buys a product that costs Orbs, once at a time and only with Orbs
+    /// enough: Discord's number is the account's, and when it hasn't been
+    /// read the purchase is left to Discord to refuse.
+    pub(super) fn buy_product(&mut self, sku: String) -> Vec<Effect> {
+        let page = &mut self.state.shop;
+        let Some(cost) = page.cost(&sku) else {
+            return vec![];
+        };
+        if self.state.preview || page.buying.contains(&sku) || page.bought.contains(&sku) {
+            return vec![];
+        }
+        if page.orbs.is_some_and(|orbs| orbs < cost) {
+            page.refused = Some("You don't have enough Orbs.".to_owned());
+            return vec![];
+        }
+        page.buying.push(sku.clone());
+        page.refused = None;
+        vec![Effect::Backend(Command::Discord(
+            DiscordCommand::BuyProduct { sku },
+        ))]
+    }
+
+    pub(super) fn product_bought(
+        &mut self,
+        sku: String,
+        result: Result<(), String>,
+    ) -> Vec<Effect> {
+        let page = &mut self.state.shop;
+        page.buying.retain(|buying| *buying != sku);
+        match result {
+            Ok(()) => {
+                page.bought.push(sku);
+                // The Orbs left are Discord's number.
+                self.load_shop()
+            }
+            Err(error) => {
+                page.refused = Some(error);
                 vec![]
             }
         }

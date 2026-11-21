@@ -1937,6 +1937,8 @@ pub enum Action {
     RefreshShop,
     AcceptQuest(String),
     ClaimQuest(String),
+    /// Buy a Shop product with Orbs, by its SKU.
+    BuyProduct(String),
     /// Show Browse Channels for the Discord server navigated to in place
     /// of its conversation.
     BrowseChannels,
@@ -3493,6 +3495,7 @@ impl Application {
             Action::RefreshShop => self.load_shop(),
             Action::AcceptQuest(id) => self.accept_quest(id),
             Action::ClaimQuest(id) => self.claim_quest(id),
+            Action::BuyProduct(sku) => self.buy_product(sku),
             Action::BrowseChannels => self.open_browse(),
             Action::BrowseFollow { room, follow } => self.browse_follow(room, follow),
             Action::MessagePerson(user) => self.message_person(user),
@@ -4670,6 +4673,7 @@ impl Application {
             Event::QuestAccepted { id, result } => return self.quest_accepted(id, result),
             Event::QuestCaptcha { id, page } => return self.quest_captcha(id, page),
             Event::QuestClaimed { id, result } => return self.quest_claimed(id, result),
+            Event::ProductBought { sku, result } => return self.product_bought(sku, result),
             Event::ShopLoaded { result } => return self.shop_loaded(result),
             Event::GiftResolved { code, result } => return self.gift_resolved(code, result),
             Event::GiftRedeemed { code, result } => return self.gift_redeemed(code, result),

@@ -281,3 +281,102 @@ fn opening_the_shop_loads_its_categories_and_orbs() {
     assert_eq!(app.state.shop.error.as_deref(), Some("No shop today."));
     assert_eq!(app.state.shop.categories.len(), 1, "the last list stays");
 }
+
+/// A Shop with one product that costs Orbs, and the account's Orbs.
+fn stocked_shop(orbs: Option<u64>) -> Application {
+    let mut app = online();
+    app.dispatch(Action::OpenDmScreen(DmScreen::Shop));
+    app.apply(Event::ShopLoaded {
+        result: Ok((
+            vec![Category {
+                sku: "1".into(),
+                name: "Vice City".into(),
+                products: vec![
+                    Product {
+                        sku: "11".into(),
+                        name: "Palm".into(),
+                        orbs: Some(400),
+                        ..Product::default()
+                    },
+                    Product {
+                        sku: "12".into(),
+                        name: "Neon".into(),
+                        price: Some("$8.99".into()),
+                        ..Product::default()
+                    },
+                ],
+                ..Category::default()
+            }],
+            orbs,
+        )),
+    });
+    app
+}
+
+#[test]
+fn buys_a_product_that_costs_orbs_once_and_reads_the_orbs_again() {
+    let mut app = stocked_shop(Some(550));
+    let effects = app.dispatch(Action::BuyProduct("11".into()));
+    assert!(asks(
+        &effects,
+        |c| matches!(c, DiscordCommand::BuyProduct { sku } if sku == "11")
+    ));
+    assert_eq!(app.state.shop.buying, ["11"]);
+
+    // A second press while Discord hasn't answered buys nothing more.
+    assert!(app.dispatch(Action::BuyProduct("11".into())).is_empty());
+
+    let after = app.apply(Event::ProductBought {
+        sku: "11".into(),
+        result: Ok(()),
+    });
+    let shop = &app.state.shop;
+    assert!(shop.buying.is_empty());
+    assert_eq!(shop.bought, ["11"]);
+    assert!(shop.refused.is_none());
+    assert!(
+        asks(&after, |c| matches!(c, DiscordCommand::LoadShop)),
+        "Discord's own number of Orbs left replaces the old one"
+    );
+
+    // What is bought is not bought again.
+    assert!(app.dispatch(Action::BuyProduct("11".into())).is_empty());
+}
+
+#[test]
+fn a_purchase_without_the_orbs_for_it_is_not_asked_of_discord() {
+    let mut app = stocked_shop(Some(399));
+    assert!(app.dispatch(Action::BuyProduct("11".into())).is_empty());
+    let shop = &app.state.shop;
+    assert!(shop.buying.is_empty());
+    assert_eq!(shop.refused.as_deref(), Some("You don't have enough Orbs."));
+}
+
+#[test]
+fn a_product_priced_in_money_has_no_purchase_in_yapfast() {
+    let mut app = stocked_shop(Some(5000));
+    assert!(app.dispatch(Action::BuyProduct("12".into())).is_empty());
+    assert!(
+        app.dispatch(Action::BuyProduct("nothing".into()))
+            .is_empty()
+    );
+    assert!(app.state.shop.buying.is_empty());
+}
+
+#[test]
+fn a_refused_purchase_says_why_and_can_be_tried_again() {
+    let mut app = stocked_shop(None);
+    app.dispatch(Action::BuyProduct("11".into()));
+    app.apply(Event::ProductBought {
+        sku: "11".into(),
+        result: Err("Discord didn't sell it.".into()),
+    });
+    let shop = &app.state.shop;
+    assert_eq!(shop.refused.as_deref(), Some("Discord didn't sell it."));
+    assert!(shop.buying.is_empty() && shop.bought.is_empty());
+    assert!(!app.dispatch(Action::BuyProduct("11".into())).is_empty());
+    assert!(
+        app.state.shop.refused.is_none(),
+        "asking again clears the old answer"
+    );
+}
