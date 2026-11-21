@@ -1,10 +1,10 @@
 //! The Quests and Shop screens: loading their data when they open, and
-//! accepting a quest.
+//! accepting a quest, and the boosts the account can give a server.
 
 use yapfast_discord::service::{Snapshot, Status};
 
 use super::*;
-use crate::storefront::{Category, Product, Quest, QuestStatus};
+use crate::storefront::{BoostSlots, Category, Product, Quest, QuestStatus};
 
 fn online() -> Application {
     let mut app = Application::default();
@@ -379,4 +379,156 @@ fn a_refused_purchase_says_why_and_can_be_tried_again() {
         app.state.shop.refused.is_none(),
         "asking again clears the old answer"
     );
+}
+
+const SERVER: &str = "discord:10";
+
+fn slots(free: u32) -> BoostSlots {
+    BoostSlots {
+        free,
+        ..BoostSlots::default()
+    }
+}
+
+fn boosting(free: u32) -> Application {
+    let mut app = online();
+    app.dispatch(Action::LoadBoosts(SERVER.into()));
+    app.apply(Event::BoostsLoaded {
+        server: SERVER.into(),
+        result: Ok(slots(free)),
+    });
+    app
+}
+
+#[test]
+fn reads_the_accounts_boosts_once_at_a_time() {
+    let mut app = online();
+    let effects = app.dispatch(Action::LoadBoosts(SERVER.into()));
+    assert!(asks(&effects, |command| matches!(
+        command,
+        DiscordCommand::LoadBoosts { server } if server == SERVER
+    )));
+    assert!(app.state.boosts.loading);
+    assert!(
+        app.dispatch(Action::LoadBoosts(SERVER.into())).is_empty(),
+        "a second asking waits for the first"
+    );
+    app.apply(Event::BoostsLoaded {
+        server: SERVER.into(),
+        result: Ok(slots(2)),
+    });
+    let page = &app.state.boosts;
+    assert!(!page.loading && page.error.is_none());
+    assert_eq!(page.slots, Some(slots(2)));
+}
+
+#[test]
+fn boosts_are_not_read_in_the_preview_offline_or_for_a_plain_server() {
+    let mut app = Application::default();
+    assert!(app.dispatch(Action::LoadBoosts(SERVER.into())).is_empty());
+    let mut app = online();
+    assert!(
+        app.dispatch(Action::LoadBoosts("local-1".into()))
+            .is_empty()
+    );
+    app.state.preview = true;
+    assert!(app.dispatch(Action::LoadBoosts(SERVER.into())).is_empty());
+    assert!(app.state.boosts.server.is_none());
+}
+
+#[test]
+fn boosts_read_for_another_server_are_dropped() {
+    let mut app = boosting(1);
+    app.dispatch(Action::LoadBoosts("discord:11".into()));
+    assert_eq!(app.state.boosts.server.as_deref(), Some("discord:11"));
+    assert!(
+        app.state.boosts.slots.is_none(),
+        "the old server's counts go"
+    );
+    // The slow answer of the first server finds the page on another.
+    app.apply(Event::BoostsLoaded {
+        server: SERVER.into(),
+        result: Ok(slots(5)),
+    });
+    assert!(app.state.boosts.slots.is_none());
+    assert!(app.state.boosts.loading);
+}
+
+#[test]
+fn a_boost_that_cannot_be_read_says_why_and_can_be_asked_again() {
+    let mut app = online();
+    app.dispatch(Action::LoadBoosts(SERVER.into()));
+    app.apply(Event::BoostsLoaded {
+        server: SERVER.into(),
+        result: Err("Couldn't read your boosts: no answer".into()),
+    });
+    let page = &app.state.boosts;
+    assert!(!page.loading && page.slots.is_none());
+    assert_eq!(
+        page.error.as_deref(),
+        Some("Couldn't read your boosts: no answer")
+    );
+    assert!(!app.dispatch(Action::LoadBoosts(SERVER.into())).is_empty());
+    assert!(app.state.boosts.error.is_none());
+}
+
+#[test]
+fn gives_the_server_a_free_boost_once_and_reads_the_boosts_again() {
+    let mut app = boosting(2);
+    let effects = app.dispatch(Action::BoostServer(SERVER.into()));
+    assert!(asks(&effects, |command| matches!(
+        command,
+        DiscordCommand::BoostServer { server } if server == SERVER
+    )));
+    assert!(app.state.boosts.applying);
+    assert!(
+        app.dispatch(Action::BoostServer(SERVER.into())).is_empty(),
+        "a second press waits for Discord"
+    );
+
+    let effects = app.apply(Event::ServerBoosted {
+        server: SERVER.into(),
+        result: Ok(()),
+    });
+    let page = &app.state.boosts;
+    assert!(!page.applying && page.given);
+    assert!(
+        asks(&effects, |command| matches!(
+            command,
+            DiscordCommand::LoadBoosts { .. }
+        )),
+        "what is left to give is Discord's number"
+    );
+}
+
+#[test]
+fn a_boost_is_not_given_without_a_free_one() {
+    let mut app = boosting(0);
+    assert!(app.dispatch(Action::BoostServer(SERVER.into())).is_empty());
+    assert!(!app.state.boosts.applying);
+
+    // Nor to a server whose boosts were not read.
+    let mut app = boosting(3);
+    assert!(
+        app.dispatch(Action::BoostServer("discord:11".into()))
+            .is_empty()
+    );
+}
+
+#[test]
+fn a_refused_boost_says_why_and_the_press_can_be_tried_again() {
+    let mut app = boosting(1);
+    app.dispatch(Action::BoostServer(SERVER.into()));
+    app.apply(Event::ServerBoosted {
+        server: SERVER.into(),
+        result: Err("Couldn't boost the server: not allowed".into()),
+    });
+    let page = &app.state.boosts;
+    assert!(!page.applying && !page.given);
+    assert_eq!(
+        page.error.as_deref(),
+        Some("Couldn't boost the server: not allowed")
+    );
+    assert!(!app.dispatch(Action::BoostServer(SERVER.into())).is_empty());
+    assert!(app.state.boosts.error.is_none());
 }

@@ -3218,6 +3218,16 @@ pub enum DiscordCommand {
     BuyProduct {
         sku: String,
     },
+    /// Read the boosts the account can give the Discord server with this
+    /// id. [`Event::BoostsLoaded`] follows.
+    LoadBoosts {
+        server: String,
+    },
+    /// Give the Discord server with this id one of the account's free
+    /// boosts. [`Event::ServerBoosted`] follows.
+    BoostServer {
+        server: String,
+    },
     /// Look up a Discord gift by its code, before offering to redeem
     /// it. [`Event::GiftResolved`] follows.
     ResolveGift {
@@ -4789,6 +4799,18 @@ pub enum Event {
     /// SKU, or why it didn't.
     ProductBought {
         sku: String,
+        result: Result<(), String>,
+    },
+    /// The account's boosts that [`DiscordCommand::LoadBoosts`] read for the
+    /// server, or why Discord showed none.
+    BoostsLoaded {
+        server: String,
+        result: Result<crate::storefront::BoostSlots, String>,
+    },
+    /// Whether [`DiscordCommand::BoostServer`] gave the server a boost, or
+    /// why it didn't.
+    ServerBoosted {
+        server: String,
         result: Result<(), String>,
     },
     /// The Shop's categories and this account's Orbs that

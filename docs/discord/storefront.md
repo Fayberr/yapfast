@@ -90,8 +90,9 @@ with a Retry; unlinked or in the preview it asks to link the account.
   (loading on open, accepting, claiming with a captcha, the double press, errors).
 - `yapfast-discord`: the parsers' unit tests and `tests/fake_server/storefront.rs`,
   against `testing/fake_discord.ts` (three quests, one claimed, two shop
-  categories, 550 Orbs; `/_control/quest-enrollments` shows what was accepted,
-  `/_control/orb-purchases` what was bought with Orbs).
+  categories, 550 Orbs, three boost slots; `/_control/quest-enrollments` shows
+  what was accepted, `/_control/orb-purchases` what was bought with Orbs,
+  `/_control/boosts` the boosts placed on servers).
 - `yapfast-iced`: `tests/dm_destinations.rs` clicks through every screen: the
   tabs, accepting a quest, the claim, the Shop's search, buying with Orbs after
   the second press, and the sidebar at each width.

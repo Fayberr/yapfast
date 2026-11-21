@@ -169,6 +169,37 @@ impl Category {
     }
 }
 
+/// What the account's boosts are doing, for one server.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct BoostSlots {
+    /// The boosts that can be given to a server now.
+    pub free: u32,
+    /// The boosts the account has given this server.
+    pub here: u32,
+    /// The boosts the account has given other servers.
+    pub elsewhere: u32,
+    /// The free boosts that are resting after being moved.
+    pub resting: u32,
+}
+
+/// The boosts the account can give, read for the server whose progress is
+/// open, and what giving one came to.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct BoostPage {
+    /// The server these answers are for, by its id.
+    pub server: Option<String>,
+    /// What Discord said of the account's boosts.
+    pub slots: Option<BoostSlots>,
+    /// Asked for and not answered.
+    pub loading: bool,
+    /// A boost is being given, until Discord answers.
+    pub applying: bool,
+    /// Why the last asking or giving failed.
+    pub error: Option<String>,
+    /// A boost was given to the server in this run.
+    pub given: bool,
+}
+
 /// The Shop screen's data.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ShopPage {

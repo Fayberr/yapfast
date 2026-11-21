@@ -6,7 +6,7 @@
 //! Discord's own checkout, paying money, Yapfast doesn't offer.
 
 use super::*;
-use crate::storefront::{Category, Quest, QuestStatus};
+use crate::storefront::{BoostPage, BoostSlots, Category, Quest, QuestStatus};
 
 impl Application {
     /// What opening a screen of the DM list loads, if it shows Discord's
@@ -171,6 +171,94 @@ impl Application {
             }
             Err(error) => {
                 page.refused = Some(error);
+                vec![]
+            }
+        }
+    }
+
+    /// Reads the boosts the account can give the server, when the server's
+    /// boost progress opens. What was read for another server is dropped.
+    pub(super) fn load_boosts(&mut self, server: String) -> Vec<Effect> {
+        if self.state.preview
+            || !self.state.discord_online
+            || crate::discord::parse_server(&server).is_none()
+        {
+            return vec![];
+        }
+        let page = &mut self.state.boosts;
+        if page.server.as_deref() != Some(server.as_str()) {
+            *page = BoostPage {
+                server: Some(server.clone()),
+                ..BoostPage::default()
+            };
+        }
+        if page.loading {
+            return vec![];
+        }
+        page.loading = true;
+        page.error = None;
+        vec![Effect::Backend(Command::Discord(
+            DiscordCommand::LoadBoosts { server },
+        ))]
+    }
+
+    pub(super) fn boosts_loaded(
+        &mut self,
+        server: String,
+        result: Result<BoostSlots, String>,
+    ) -> Vec<Effect> {
+        let page = &mut self.state.boosts;
+        if page.server.as_deref() != Some(server.as_str()) {
+            return vec![];
+        }
+        page.loading = false;
+        match result {
+            Ok(slots) => {
+                page.slots = Some(slots);
+                page.error = None;
+            }
+            Err(error) => page.error = Some(error),
+        }
+        vec![]
+    }
+
+    /// Gives the server a boost, once at a time and only when the account
+    /// has a free one.
+    pub(super) fn boost_server(&mut self, server: String) -> Vec<Effect> {
+        let page = &mut self.state.boosts;
+        if self.state.preview
+            || page.server.as_deref() != Some(server.as_str())
+            || page.applying
+            || page.slots.is_none_or(|slots| slots.free == 0)
+        {
+            return vec![];
+        }
+        page.applying = true;
+        page.given = false;
+        page.error = None;
+        vec![Effect::Backend(Command::Discord(
+            DiscordCommand::BoostServer { server },
+        ))]
+    }
+
+    pub(super) fn server_boosted(
+        &mut self,
+        server: String,
+        result: Result<(), String>,
+    ) -> Vec<Effect> {
+        let page = &mut self.state.boosts;
+        if page.server.as_deref() != Some(server.as_str()) {
+            return vec![];
+        }
+        page.applying = false;
+        match result {
+            Ok(()) => {
+                page.given = true;
+                // What is left to give is Discord's number.
+                self.load_boosts(server)
+            }
+            Err(error) => {
+                page.error = Some(error);
                 vec![]
             }
         }

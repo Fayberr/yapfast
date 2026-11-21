@@ -310,6 +310,11 @@
 // once and sends ENTITLEMENT_CREATE and GIFT_CODE_UPDATE, and GET
 // /_control/gift-redeems lists each redemption. Gift AbCdEfGhIjKlMnOp needs
 // a payment source.
+// Server Boosts: GET /users/@me/guilds/premium/subscription-slots lists
+// Alice's three boosts (one free, one still resting after a move, one on
+// another server), PUT /guilds/{id}/premium/subscriptions places the free
+// ones named by user_premium_guild_subscription_slot_ids, and GET
+// /_control/boosts lists each placement.
 // Quests and the Shop answer as Discord's pages ask: GET /quests/@me lists
 // three quests (one to accept, one under way, one done), GET
 // /quests/@me/claimed one claimed, POST /quests/{id}/enroll accepts one and
@@ -5184,6 +5189,14 @@ const questStatus = new Map<string, Record<string, unknown> | null>([
   ["9100000000000000002", { user_id: "0", quest_id: "9100000000000000002", enrolled_at: "2026-11-19T10:00:00+00:00", completed_at: null, claimed_at: null, progress: { WATCH_VIDEO: { event_name: "WATCH_VIDEO", value: 20 } } }],
   ["9100000000000000003", { user_id: "0", quest_id: "9100000000000000003", enrolled_at: "2026-11-18T10:00:00+00:00", completed_at: "2026-11-19T10:00:00+00:00", claimed_at: null, progress: {} }],
 ]);
+/** Alice's boost slots, which placing one on a server changes. */
+const boostSlots: Record<string, any>[] = [
+  { id: "9300000000000000001", subscription_id: "1", canceled: false, cooldown_ends_at: null, premium_guild_subscription: null },
+  { id: "9300000000000000002", subscription_id: "1", canceled: false, cooldown_ends_at: "2999-01-01T00:00:00+00:00", premium_guild_subscription: null },
+  { id: "9300000000000000003", subscription_id: "1", canceled: false, cooldown_ends_at: null, premium_guild_subscription: { id: "9400000000000000001", guild_id: "1400000000000000999", ended: false } },
+];
+/** Each placement of a boost, oldest first, for GET /_control/boosts. */
+const boostPlacements: Record<string, unknown>[] = [];
 const ORBS = 550;
 /** The Orbs Alice has spent in the Shop, and each purchase, oldest first,
  *  for GET /_control/orb-purchases. */
@@ -8154,6 +8167,23 @@ async function api(req: Request, path: string, origin: string): Promise<Response
     ]);
   }
   if (method === "GET" && path === "/users/@me/virtual-currency/balance") return json({ balance: ORBS - orbsSpent });
+  if (method === "GET" && path === "/users/@me/guilds/premium/subscription-slots") return json(boostSlots);
+  // Placing boosts: only free slots are taken, and each is refused once its
+  // cooldown runs or it is on a server.
+  if (method === "PUT" && (m = path.match(/^\/guilds\/(\d+)\/premium\/subscriptions$/))) {
+    const guild = m[1]!;
+    const body: any = await req.json().catch(() => ({}));
+    const ids: unknown[] = Array.isArray(body.user_premium_guild_subscription_slot_ids) ? body.user_premium_guild_subscription_slot_ids : [];
+    const taken = ids.map((id) => boostSlots.find((slot) => slot.id === id));
+    if (taken.length === 0 || taken.some((slot) => !slot || slot.canceled || slot.premium_guild_subscription || (slot.cooldown_ends_at && Date.parse(slot.cooldown_ends_at) > Date.now()))) {
+      return json({ message: "Invalid Form Body", code: 50035, errors: { user_premium_guild_subscription_slot_ids: { _errors: [{ code: "BASE_TYPE_BAD_LENGTH", message: "Subscription slot is not available." }] } } }, 400);
+    }
+    for (const slot of taken) {
+      slot!.premium_guild_subscription = { id: `${slot!.id}1`, guild_id: guild, ended: false };
+      boostPlacements.push({ guild, slot: slot!.id });
+    }
+    return json(taken.map((slot) => slot!.premium_guild_subscription));
+  }
   // Buying an Orbs product with Orbs: refused without the Orbs for it, or
   // for one that Orbs don't buy; nothing is charged in money.
   if (method === "POST" && (m = path.match(/^\/virtual-currency\/skus\/(\d+)\/redeem$/))) {
@@ -10009,6 +10039,9 @@ const server = Bun.serve<SocketData>({
     }
     if (req.method === "GET" && path === "/_control/quest-claims") {
       return Response.json(questClaims);
+    }
+    if (req.method === "GET" && path === "/_control/boosts") {
+      return Response.json(boostPlacements);
     }
     if (req.method === "GET" && path === "/_control/orb-purchases") {
       return Response.json(orbPurchases);

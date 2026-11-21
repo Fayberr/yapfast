@@ -3300,6 +3300,26 @@ impl Discord {
         Ok((categories, orbs))
     }
 
+    /// The account's boosts as they stand for the server `guild`.
+    pub async fn boost_slots(&self, guild: &str) -> Result<crate::boost::Slots> {
+        let answer = self.api.boost_slots().await?;
+        Ok(crate::boost::slots(&answer, guild, chrono::Utc::now()))
+    }
+
+    /// Gives the server `guild` one of the account's free boosts. Fails
+    /// with a sentence for it when none is free.
+    pub async fn boost_server(&self, guild: &str) -> Result<()> {
+        let slots = self.boost_slots(guild).await?;
+        let slot = slots
+            .free
+            .first()
+            .context("You have no free boost for this server.")?;
+        self.api
+            .boost_guild(guild, std::slice::from_ref(slot))
+            .await?;
+        Ok(())
+    }
+
     /// Buys the Shop product with this SKU with Orbs; see
     /// [`Api::buy_with_orbs`].
     pub async fn buy_with_orbs(&self, sku: &str) -> Result<()> {

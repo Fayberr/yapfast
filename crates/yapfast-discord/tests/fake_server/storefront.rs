@@ -165,3 +165,38 @@ async fn buys_a_product_with_orbs_and_the_orbs_fall() {
     assert_eq!(bought[0]["sku"], star.sku.as_str());
     assert_eq!(bought[0]["checkout"], true);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "starts testing/fake_discord.ts with bun; run scripts/test-fake-discord"]
+async fn gives_a_server_the_free_boost_and_only_that_one() {
+    let Fixture {
+        _fake,
+        discord,
+        server,
+        ..
+    } = Fixture::start("gives_a_server_the_free_boost_and_only_that_one").await;
+    const SERVER: &str = "1400000000000000100";
+
+    // One boost is free, one rests after a move and one is on another server.
+    let slots = discord.boost_slots(SERVER).await.unwrap();
+    assert_eq!(slots.free, ["9300000000000000001"]);
+    assert_eq!((slots.here, slots.elsewhere, slots.resting), (0, 1, 1));
+
+    discord.boost_server(SERVER).await.unwrap();
+    let slots = discord.boost_slots(SERVER).await.unwrap();
+    assert!(slots.free.is_empty());
+    assert_eq!((slots.here, slots.elsewhere, slots.resting), (1, 1, 1));
+    let placed: serde_json::Value =
+        serde_json::from_str(&control(server, "GET", "/_control/boosts", "")).unwrap();
+    let placed = placed.as_array().unwrap();
+    assert_eq!(placed.len(), 1);
+    assert_eq!(placed[0]["guild"], SERVER);
+    assert_eq!(placed[0]["slot"], "9300000000000000001");
+
+    // Nothing is left to give, and Discord is not asked.
+    let error = discord.boost_server(SERVER).await.unwrap_err();
+    assert!(error.to_string().contains("no free boost"), "{error:#}");
+    let placed: serde_json::Value =
+        serde_json::from_str(&control(server, "GET", "/_control/boosts", "")).unwrap();
+    assert_eq!(placed.as_array().unwrap().len(), 1);
+}

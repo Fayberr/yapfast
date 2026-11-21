@@ -803,6 +803,21 @@ impl Api {
             .await
     }
 
+    /// The boosts this account has, as slots, whether placed or free; see
+    /// [`crate::boost::slots`].
+    pub async fn boost_slots(&self) -> Result<Value> {
+        self.json(self.request(Method::GET, "/users/@me/guilds/premium/subscription-slots"))
+            .await
+    }
+
+    /// Gives the server `guild` the boosts of these slots.
+    pub async fn boost_guild(&self, guild: &str, slots: &[String]) -> Result<Value> {
+        let path = format!("/guilds/{}/premium/subscriptions", encode(guild));
+        let body = json!({"user_premium_guild_subscription_slot_ids": slots});
+        self.json(with_json(self.request(Method::PUT, &path), &body))
+            .await
+    }
+
     /// How many Orbs this account holds: `{balance}`.
     pub async fn orbs_balance(&self) -> Result<Value> {
         self.json(self.request(Method::GET, "/users/@me/virtual-currency/balance"))
