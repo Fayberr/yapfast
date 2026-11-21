@@ -442,10 +442,6 @@ msgstr ""
 msgid "Add:"
 msgstr ""
 
-#: crates/yapfast-iced/src/profile/full.rs
-msgid "Adding more from Yapfast is coming soon."
-msgstr ""
-
 #: crates/yapfast-iced/src/header_popovers.rs
 msgid "Adding..."
 msgstr ""
@@ -7022,16 +7018,8 @@ msgstr ""
 msgid "Write a reply"
 msgstr ""
 
-#: crates/yapfast-iced/src/bot_modal.rs
-msgid "Yapfast can't fill this part yet."
-msgstr ""
-
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Yapfast can't read this microphone. Check that it's connected, or choose another."
-msgstr ""
-
-#: crates/yapfast-iced/src/components.rs
-msgid "Yapfast can't show this part of the message yet."
 msgstr ""
 
 #: src/keybinds.rs
@@ -7048,6 +7036,14 @@ msgstr ""
 
 #: src/keybinds.rs
 msgid "Yapfast couldn't watch keys in other apps"
+msgstr ""
+
+#: crates/yapfast-iced/src/components.rs
+msgid "Yapfast does not know this part of the message."
+msgstr ""
+
+#: crates/yapfast-iced/src/bot_modal.rs
+msgid "Yapfast does not know this part."
 msgstr ""
 
 #: src/update/install.rs

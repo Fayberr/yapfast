@@ -282,7 +282,7 @@ impl<'a> View<'a> {
                 ),
                 None => Space::new().into(),
             },
-            UNSUPPORTED => text(tr("Yapfast can't fill this part yet."))
+            UNSUPPORTED => text(tr("Yapfast does not know this part."))
                 .size(14)
                 .color(theme.secondary)
                 .into(),

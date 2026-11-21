@@ -441,10 +441,6 @@ msgstr "Ajoutez vos pronoms"
 msgid "Add:"
 msgstr "Ajouter :"
 
-#: crates/yapfast-iced/src/profile/full.rs
-msgid "Adding more from Yapfast is coming soon."
-msgstr "L'ajout d'autres éléments depuis Yapfast arrive bientôt."
-
 #: crates/yapfast-iced/src/header_popovers.rs
 msgid "Adding..."
 msgstr "Ajout..."
@@ -7021,17 +7017,9 @@ msgstr "Voulez-vous synchroniser les permissions de {0} avec {1} ?"
 msgid "Write a reply"
 msgstr "Écrire une réponse"
 
-#: crates/yapfast-iced/src/bot_modal.rs
-msgid "Yapfast can't fill this part yet."
-msgstr "Yapfast ne peut pas encore remplir cette partie."
-
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Yapfast can't read this microphone. Check that it's connected, or choose another."
 msgstr "Yapfast ne peut pas lire ce micro. Vérifiez qu'il est branché, ou choisissez-en un autre."
-
-#: crates/yapfast-iced/src/components.rs
-msgid "Yapfast can't show this part of the message yet."
-msgstr "Yapfast ne peut pas encore afficher cette partie du message."
 
 #: src/keybinds.rs
 msgid "Yapfast can't watch keys in other apps on this system yet"
@@ -7048,6 +7036,14 @@ msgstr "Yapfast ne peut pas écrire dans le dossier de l'AppImage."
 #: src/keybinds.rs
 msgid "Yapfast couldn't watch keys in other apps"
 msgstr "Yapfast n'a pas pu surveiller les touches dans les autres applications"
+
+#: crates/yapfast-iced/src/components.rs
+msgid "Yapfast does not know this part of the message."
+msgstr "Yapfast ne connaît pas cette partie du message."
+
+#: crates/yapfast-iced/src/bot_modal.rs
+msgid "Yapfast does not know this part."
+msgstr "Yapfast ne connaît pas cet élément."
 
 #: src/update/install.rs
 msgid "Yapfast has no folder."
