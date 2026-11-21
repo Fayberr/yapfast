@@ -240,9 +240,9 @@ fn the_add_server_dialog_creates_only_on_confirmation_and_keeps_join_available()
 
     let (mut app, _folder) = discord_server(0, |_, _| {});
     let _ = app.update(Message::Rail(crate::rail::Event::Join));
-    assert!(shows(&app, "Add a server"));
+    assert!(shows(&app, "Create Your Server"));
     interact(&mut app, |ui| {
-        ui.click("Join with an invite").expect("join");
+        ui.click("Join a Server").expect("join");
     });
     interact(&mut app, |ui| {
         ui.click("Back").expect("return to layouts");
@@ -290,11 +290,11 @@ fn join_a_server_shows_the_invites_server_and_a_link_opens_it() {
     press(&mut app, key::Named::Escape);
     assert!(app.client.state().join.is_none());
 
-    // Join with an invite from the rail opens the field, which takes the keys.
+    // Already have an invite? from the rail opens the field, which takes the keys.
     let _ = app.update(Message::Rail(crate::rail::Event::Join));
-    assert!(shows(&app, "Join with an invite"));
+    assert!(shows(&app, "Already have an invite?"));
     interact(&mut app, |ui| {
-        ui.click("Join with an invite").expect("join");
+        ui.click("Join a Server").expect("join");
     });
     assert!(shows(&app, "Join a Server") && shows(&app, "Find Invite"));
     interact(&mut app, |ui| {

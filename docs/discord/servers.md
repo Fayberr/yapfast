@@ -196,9 +196,10 @@ leaves those out.
 
 ## Creating a server
 
-The server rail's plus opens Add a server. Basic uses Discord's default
-channels. Gaming, Friends, Study Group and School Club use Yapfast's
-starter layouts. Name the server, optionally choose a local icon, and
+The server rail's plus opens Create Your Server, laid out as Discord's
+(444 px card, a scroller of 54 px template rows). Create My Own uses
+Discord's default channels. Gaming, Friends, Study Group and School Club
+use Yapfast's starter layouts, each with a picture of Yapfast's own. Name the server, optionally choose a local icon, and
 confirm. The server opens when Discord's gateway lists it.
 
 Yapfast uses the authenticated Discord user client's
@@ -211,7 +212,7 @@ request leaves the form open with Discord's error.
 
 ## Joining by invite
 
-Join with an invite in Add a server opens Join a Server, which takes an
+Join a Server, the button under Already have an invite? in Create Your Server, opens Join a Server, which takes an
 invite link or a bare code, a server's vanity code too, as Discord's dialog
 does: `discord.gg/{code}`, or `/invite/{code}` on discord.com, discordapp.com,
 canary and ptb, with any query left off; otherwise the last part after a `/`
