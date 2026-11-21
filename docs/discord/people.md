@@ -68,7 +68,10 @@ in the header: Online, for those online, idle or on do not disturb, and All. A
 search field filters it by name, and "Add Friend" in the header selects a tab
 of that name, a pill tinted with the accent, and shows the add-friend page in
 place of the list: a title, and the username with "Send Friend Request" at the
-right in one 58px box. A Pending tab goes to the requests screen. The other
+right in one 58px box, then a line and "Other places to find friends" with a tile
+that opens the list of discoverable servers. Discord's page also has a message
+to send with the request (120 characters) and an illustration; Yapfast has neither,
+since the request's message is not a field it has seen Discord's API take. A Pending tab goes to the requests screen. The other
 tabs close the page, as does going to a conversation, a server or the requests
 screen (the core drops `add_friend` when the screen changes); where the
 friends list isn't showing, Add Friend opens the dialog. A button at the

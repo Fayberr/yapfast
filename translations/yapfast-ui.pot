@@ -1670,6 +1670,10 @@ msgstr ""
 msgid "Don't delete any"
 msgstr ""
 
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Don't have a username on hand? Check out our list of public servers that covers everything from gaming to cooking, music, anime and more."
+msgstr ""
+
 #: crates/yapfast-iced/src/boost_goal.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/server_settings/moderation.rs
 msgid "Done"
 msgstr ""
@@ -1985,6 +1989,10 @@ msgid "expires in {n} hour"
 msgid_plural "expires in {n} hours"
 msgstr[0] ""
 msgstr[1] ""
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Explore Discoverable Servers"
+msgstr ""
 
 #: crates/yapfast-iced/src/signin.rs
 msgid "Explore local preview"
@@ -4034,6 +4042,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/forum.rs
 msgid "Original message was deleted"
+msgstr ""
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Other places to find friends"
 msgstr ""
 
 #: crates/yapfast-iced/src/settings/voice.rs

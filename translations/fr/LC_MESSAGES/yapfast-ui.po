@@ -1669,6 +1669,10 @@ msgstr "Ne plus demander"
 msgid "Don't delete any"
 msgstr "Ne rien supprimer"
 
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Don't have a username on hand? Check out our list of public servers that covers everything from gaming to cooking, music, anime and more."
+msgstr "Vous n'avez pas de nom d'utilisateur sous la main ? Découvrez notre liste de serveurs publics qui couvre tout, du jeu à la cuisine, en passant par la musique, les animés et plus encore."
+
 #: crates/yapfast-iced/src/boost_goal.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/server_settings/moderation.rs
 msgid "Done"
 msgstr "Terminé"
@@ -1984,6 +1988,10 @@ msgid "expires in {n} hour"
 msgid_plural "expires in {n} hours"
 msgstr[0] "expire dans {n} heure"
 msgstr[1] "expire dans {n} heures"
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Explore Discoverable Servers"
+msgstr "Explorer les serveurs découvrables"
 
 #: crates/yapfast-iced/src/signin.rs
 msgid "Explore local preview"
@@ -4034,6 +4042,10 @@ msgstr "Boutique d'Orbes"
 #: crates/yapfast-iced/src/forum.rs
 msgid "Original message was deleted"
 msgstr "Le message d'origine a été supprimé"
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Other places to find friends"
+msgstr "Autres endroits pour trouver des amis"
 
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Otherwise you join muted, and unmute when you're ready."

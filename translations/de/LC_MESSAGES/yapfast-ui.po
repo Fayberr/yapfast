@@ -1669,6 +1669,10 @@ msgstr "Nicht erneut fragen"
 msgid "Don't delete any"
 msgstr "Nichts löschen"
 
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Don't have a username on hand? Check out our list of public servers that covers everything from gaming to cooking, music, anime and more."
+msgstr "Du hast keinen Benutzernamen zur Hand? Wirf einen Blick in unsere Liste öffentlicher Server, die alles umfasst – von Gaming über Kochen, Musik, Anime und mehr."
+
 #: crates/yapfast-iced/src/boost_goal.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/server_settings/moderation.rs
 msgid "Done"
 msgstr "Fertig"
@@ -1855,7 +1859,7 @@ msgstr "Nachricht eingeben ..."
 
 #: crates/yapfast-iced/src/friends/mod.rs
 msgid "Enter a username"
-msgstr "Benutzernamen eingeben"
+msgstr "Gib einen Benutzernamen ein"
 
 #: crates/yapfast-iced/src/settings/pages/games.rs
 msgid "Enter an executable and a name of up to 128 characters, without line breaks."
@@ -1984,6 +1988,10 @@ msgid "expires in {n} hour"
 msgid_plural "expires in {n} hours"
 msgstr[0] "läuft in {n} Stunde ab"
 msgstr[1] "läuft in {n} Stunden ab"
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Explore Discoverable Servers"
+msgstr "Erkunde entdeckbare Server"
 
 #: crates/yapfast-iced/src/signin.rs
 msgid "Explore local preview"
@@ -4035,6 +4043,10 @@ msgstr "Orbs-Shop"
 msgid "Original message was deleted"
 msgstr "Ursprüngliche Nachricht wurde gelöscht"
 
+#: crates/yapfast-iced/src/friends/mod.rs
+msgid "Other places to find friends"
+msgstr "Weitere Orte, um Freunde zu finden"
+
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Otherwise you join muted, and unmute when you're ready."
 msgstr "Sonst trittst du stummgeschaltet bei und hebst die Stummschaltung auf, wenn du bereit bist."
@@ -4937,7 +4949,7 @@ msgstr "Sende Dateien bis 500 MB und längere Nachrichten."
 
 #: crates/yapfast-iced/src/friends/mod.rs
 msgid "Send Friend Request"
-msgstr "Freundschaftsanfrage senden"
+msgstr "Freund hinzufügen"
 
 #: crates/yapfast-iced/src/server_settings/profile.rs
 msgid "Send helpful tips for server setup."
@@ -6755,7 +6767,7 @@ msgstr "Du kannst Kommentare hinzufügen, bevor du hochlädst."
 
 #: crates/yapfast-iced/src/friends/mod.rs
 msgid "You can add friends with their Discord username."
-msgstr "Du kannst Freunde über ihren Discord-Benutzernamen hinzufügen."
+msgstr "Du kannst Freunde mithilfe ihres Discord-Benutzernamens hinzufügen."
 
 #: crates/yapfast-iced/src/header_popovers.rs
 msgid "You can add {n} more friend."

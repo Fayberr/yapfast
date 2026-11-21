@@ -184,7 +184,8 @@ member list, the DMs, and the lists still to come build on it.
 - Add Friend's page, on the friends list, and its dialog, anywhere else
   one is asked for, send a request by username and say how it went (Send
   Friend Request, in the same box as the field on the page, "Sent {name} a
-  friend request." or Discord's words).
+  friend request." or Discord's words), then a line and a tile that opens Discover
+  ("Explore Discoverable Servers"); the page scrolls where the window is short.
 - Menus opened by a button rather than a right click open where it was
   pressed: the window notes each press's point (`RightPress::spot`).
 - Escape closes a dialog whose field has the keys (Add Friend, a person's
