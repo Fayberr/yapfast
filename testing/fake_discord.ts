@@ -7813,6 +7813,26 @@ async function api(req: Request, path: string, origin: string): Promise<Response
 
   // A member's menu in "Server": nicknames, roles, timeouts, kicks and
   // bans, as far as Alice's roles allow; see "Server members" above.
+  // Joining from Discovery must be handled before looking up existing members.
+  if (method === "PUT" && (m = path.match(/^\/guilds\/(\d+)\/members\/@me$/))) {
+    if (!DISCOVERABLE.some((server) => server.id === m![1])) return notFound("Unknown Guild", 10004);
+    if (discoveryCaptcha) {
+      const solved = req.headers.get("x-captcha-key") === "solved"
+        && req.headers.get("x-captcha-rqtoken") === TICKET_CAPTCHA.captcha_rqtoken
+        && req.headers.get("x-captcha-session-id") === TICKET_CAPTCHA.captcha_session_id;
+      if (!solved) return json(TICKET_CAPTCHA, 400);
+      discoveryCaptcha = false;
+    }
+    if (discoveryJoins.some((join) => join.guild === m![1])) {
+      return json({ message: "You are already in this server.", code: 30001 }, 400);
+    }
+    discoveryJoins.push({
+      guild: m[1],
+      location: url.searchParams.get("location"),
+      lurker: url.searchParams.get("lurker"),
+    });
+    return empty();
+  }
   if ((m = path.match(/^\/guilds\/(\d+)\/(members|bans)\/(\d+|@me)(?:\/roles\/(\d+))?$/))) {
     if (m[1] !== GUILD) return notFound("Unknown Guild", 10004);
     const [kind, who, role] = [m[2]!, m[3]!, m[4]];
@@ -8266,25 +8286,6 @@ async function api(req: Request, path: string, origin: string): Promise<Response
       { id: 1, name: "Gaming", is_primary: true },
       { id: 3, name: "Music", is_primary: true },
     ]);
-  }
-  if (method === "PUT" && (m = path.match(/^\/guilds\/(\d+)\/members\/@me$/))) {
-    if (!DISCOVERABLE.some((server) => server.id === m![1])) return notFound("Unknown Guild", 10004);
-    if (discoveryCaptcha) {
-      const solved = req.headers.get("x-captcha-key") === "solved"
-        && req.headers.get("x-captcha-rqtoken") === TICKET_CAPTCHA.captcha_rqtoken
-        && req.headers.get("x-captcha-session-id") === TICKET_CAPTCHA.captcha_session_id;
-      if (!solved) return json(TICKET_CAPTCHA, 400);
-      discoveryCaptcha = false;
-    }
-    if (discoveryJoins.some((join) => join.guild === m![1])) {
-      return json({ message: "You are already in this server.", code: 30001 }, 400);
-    }
-    discoveryJoins.push({
-      guild: m[1],
-      location: url.searchParams.get("location"),
-      lurker: url.searchParams.get("lurker"),
-    });
-    return empty();
   }
   // Buying an Orbs product with Orbs: refused without the Orbs for it, or
   // for one that Orbs don't buy; nothing is charged in money.

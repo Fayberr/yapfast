@@ -300,6 +300,9 @@ fn an_orbs_product_is_bought_in_yapfast_after_a_second_press() {
     dm_home(&mut app);
     stocked(&mut app);
     open(&mut app, "Shop");
+    interact(&mut app, |ui| {
+        ui.click("Orbs Shop").expect("the shop's Orbs tab");
+    });
     assert!(!shows(&app, "Buy for 400"));
     interact(&mut app, |ui| {
         ui.click("Buy").expect("the Buy button of the Orbs product");
@@ -339,6 +342,9 @@ fn a_product_costing_more_orbs_than_the_account_has_cannot_be_bought() {
     stocked(&mut app);
     change(&mut app, |state| state.shop.orbs = Some(399));
     open(&mut app, "Shop");
+    interact(&mut app, |ui| {
+        ui.click("Orbs Shop").expect("the shop's Orbs tab");
+    });
     assert!(shows(&app, "Not enough Orbs"));
     assert!(!shows(&app, "Buy"));
     assert!(app.client.state().shop.buying.is_empty());
@@ -435,8 +441,11 @@ fn discovered(id: &str, name: &str) -> DiscoverServer {
 /// four that match, the second of them joined already.
 fn discover(app: &mut App) {
     dm_home(app);
+    app.shell.frame.height = 1000.0;
+    crate::window_bar::fit_window(app);
+    change(app, |state| state.discord_online = true);
+    let _ = app.update(Message::Rail(crate::rail::Event::Discover));
     change(app, |state| {
-        state.discord_online = true;
         state.discover = DiscoverPage {
             categories: vec![
                 DiscoverCategory {
@@ -459,7 +468,6 @@ fn discover(app: &mut App) {
             ..DiscoverPage::default()
         };
     });
-    let _ = app.update(Message::Rail(crate::rail::Event::Discover));
     browser::take_opened();
 }
 

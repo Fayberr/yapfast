@@ -37,6 +37,7 @@ fn open(linked: bool) -> (App, tempfile::TempDir) {
 fn open_online() -> (App, tempfile::TempDir) {
     let (mut app, folder) = open(true);
     change(&mut app, |state| {
+        state.account = Some("42".into());
         state.preview = false;
         state.discord_online = true;
     });
