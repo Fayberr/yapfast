@@ -10,7 +10,7 @@ Both run inside Yapfast: nothing here opens a browser.
 | Button | What it does |
 | --- | --- |
 | Gift | Opens a menu of the gifts the account bought and can still give, each by its plan's name (such as "Nitro Monthly"). Choosing one puts its link, `https://discord.gift/<code>`, in the message at the caret, with a space before it when the text before it does not end in one. The person sends the message; nothing is sent by the menu. |
-| Apps | Opens the native slash-command picker (`/` and the room's commands), or resumes the command already being written. Picking a command prepares it; Enter runs it through the existing command implementation ([Apps' commands](messages.md#apps-commands)). |
+| Apps | Opens a search and list of apps with usable commands in the current chat. Selecting an app lists its commands. Picking a command prepares it; Enter runs it through the existing command implementation ([Apps' commands](messages.md#apps-commands)). |
 
 ## The gift menu
 
@@ -29,20 +29,17 @@ and Yapfast shows as a gift in the timeline ([gift links](messages.md)).
 
 ## The Apps button
 
-Apps opens the picker without a menu in between. While an ordinary message
-draft is nonempty it is dim, and its tooltip says "Apps: finish or clear your
-message first": the picker would replace the draft, so the draft is never
-touched. With a command being written, or the picker already open, pressing
-it leaves the text as it is and focuses the composer.
-
-Discord's activities and its App Directory are not in Yapfast: an activity
-runs a web page inside the call, and the directory is a store with OAuth
-installs. Neither is offered as a stub or a link to discord.com.
+Apps opens the browser above the composer and focuses search. It uses
+the same room index and permission checks as the typed `/` picker.
+Search matches app names, command names and descriptions. Selecting an app
+narrows the list to its commands. Selecting a command prepares it for Enter
+when the composer is empty or contains a slash query. An ordinary draft or
+a command already being written can stay in place while browsing.
 
 ## Behaviour shared by both
 
-Escape or clicking outside closes the gift menu. Opening it closes the
-expression picker first. Neither button changes a draft by itself.
+Escape or clicking outside dismisses either popup. Opening one closes the
+expression picker first. Drafts stay in place while browsing.
 
 ## Unverified
 
@@ -57,7 +54,7 @@ appear in the giftable inventory, is unverified.
 
 `tests/composer_tools.rs` and `composer/tools.rs` in `yapfast-iced`: the
 menu's loading, list, empty and error lines, the inserted link, the stale-room
-guard, the Apps picker and its draft protection, unavailable contexts, Escape
+guard, the Apps browser and its draft protection, unavailable contexts, Escape
 and closing the expression picker. `application/tests/storefront.rs` covers
 `LoadGifts` and `GiftsLoaded`. The fake-server test `lists_the_gifts_the_account_can_still_give`
 (`scripts/test-fake-discord`) runs the read against the fake.
