@@ -4,7 +4,7 @@
 
 use iced::{
     Alignment, Element, Length, Padding, Point,
-    widget::{column, container, mouse_area, row, text},
+    widget::{Space, column, container, mouse_area, row, stack, text},
 };
 use yapfast_core::{
     application::AppState,
@@ -360,11 +360,7 @@ pub fn view<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
         })
     };
     let alert = |on: bool| if on { theme.danger } else { theme.text };
-    // A muted or deafened device keeps a dark ground as Discord's does:
-    // measured over a nameplate, 20% of a near-black red, which on the
-    // plain panel reads as the same step down. The toggle (32 px) and the
-    // caret (16 px) each carry their own rounded half with a 1 px gap
-    // between them where the panel shows through; there is no seam.
+    // Tinted controls leave the panel visible between the toggle and its menu.
     let dimmed = |on: bool,
                   toggle: Element<'a, Message>,
                   caret: Element<'a, Message>|
