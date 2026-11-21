@@ -112,6 +112,12 @@ pub struct QuestsPage {
     pub error: Option<String>,
     /// The quests being accepted, until Discord answers.
     pub accepting: Vec<String>,
+    /// The quests whose rewards are being claimed, until Discord answers,
+    /// which may wait on a captcha.
+    pub claiming: Vec<String>,
+    /// The page with the captcha Discord asked for before a claim, to open
+    /// again if the browser tab was closed.
+    pub captcha: Option<String>,
 }
 
 /// What a product is.

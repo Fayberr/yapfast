@@ -1,7 +1,6 @@
 //! The DM sidebar's Nitro, Shop and Quests screens: opened in Yapfast from
 //! the DM navigation rows alongside Friends and Requests, each with its own
-//! tabs; the Quests accepted here, the Shop searched, and the purchase and
-//! the claim handed to discord.com.
+//! tabs; the Quests accepted and claimed here, the Shop searched.
 
 use iced::{Settings, widget::Id};
 use iced_test::Simulator;
@@ -18,7 +17,7 @@ use crate::{
     browser,
     sidebar::{
         self,
-        destinations::{NITRO_URL, NitroTab, QUESTS_URL, QuestTab, SEARCH, SHOP_URL, ShopTab},
+        destinations::{NITRO_URL, NitroTab, QuestTab, SEARCH, SHOP_URL, ShopTab},
     },
 };
 
@@ -206,7 +205,7 @@ fn the_quests_screen_lists_discords_quests_and_accepts_one() {
 }
 
 #[test]
-fn a_finished_quest_is_claimed_on_discord_com() {
+fn a_finished_quest_is_claimed_in_yapfast() {
     let (mut app, _folder) = preview();
     dm_home(&mut app);
     stocked(&mut app);
@@ -217,10 +216,11 @@ fn a_finished_quest_is_claimed_on_discord_com() {
     interact(&mut app, |ui| {
         ui.click("Claim reward").expect("the claim button");
     });
-    assert_eq!(
-        browser::take_opened(),
-        [QUESTS_URL],
-        "a claim may ask for a captcha, which only discord.com shows"
+    assert_eq!(app.client.state().quests.claiming, ["q1"]);
+    assert!(shows(&app, "Claiming"), "no second press while it waits");
+    assert!(
+        browser::take_opened().is_empty(),
+        "claiming is asked of Discord by Yapfast, not sent to discord.com"
     );
 }
 

@@ -30,7 +30,6 @@ mod shop;
 
 pub const NITRO_URL: &str = "https://discord.com/nitro";
 pub const SHOP_URL: &str = "https://discord.com/shop";
-pub const QUESTS_URL: &str = "https://discord.com/discovery/quests";
 
 /// The search field's id in the Shop's header.
 pub const SEARCH: &str = "shop-search";
@@ -87,6 +86,8 @@ pub enum Event {
     Search(String),
     /// Accepts the quest with this id.
     Accept(String),
+    /// Claims the reward of the finished quest with this id.
+    Claim(String),
     /// Asks Discord for the open screen's list again.
     Refresh,
 }
@@ -107,6 +108,7 @@ pub fn update(app: &mut App, event: Event) -> Task<Message> {
         Event::Nitro(tab) => app.pages.nitro = tab,
         Event::Search(query) => app.pages.search = query,
         Event::Accept(id) => app.client.dispatch(Action::AcceptQuest(id)),
+        Event::Claim(id) => app.client.dispatch(Action::ClaimQuest(id)),
         Event::Refresh => match crate::friends::dm_screen(app) {
             Some(DmScreen::Quests) => app.client.dispatch(Action::RefreshQuests),
             Some(DmScreen::Shop) => app.client.dispatch(Action::RefreshShop),

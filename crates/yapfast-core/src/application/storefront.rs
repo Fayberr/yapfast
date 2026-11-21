@@ -1,7 +1,8 @@
 //! The Quests and Shop screens' data: loaded from Discord when the screen
 //! opens, refreshed when asked, and the one thing the Quests screen does
-//! itself, accepting a quest. What needs Discord's own checkout, buying,
-//! and claiming a reward, which may ask for a captcha, opens discord.com.
+//! itself: accepting a quest, and claiming a finished quest's reward, which
+//! may ask for a captcha that the browser shows, as joining a server does.
+//! What needs Discord's own checkout, paying money, Yapfast doesn't offer.
 
 use super::*;
 use crate::storefront::{Category, Quest, QuestStatus};
@@ -74,6 +75,55 @@ impl Application {
                     quest.status = QuestStatus::Accepted;
                 }
                 // Discord's own numbers replace the guess.
+                self.load_quests()
+            }
+            Err(error) => {
+                page.error = Some(error);
+                vec![]
+            }
+        }
+    }
+
+    /// Claims the reward of a quest that is done, once at a time.
+    pub(super) fn claim_quest(&mut self, id: String) -> Vec<Effect> {
+        let page = &mut self.state.quests;
+        if self.state.preview
+            || page.claiming.contains(&id)
+            || !page
+                .offered
+                .iter()
+                .any(|quest| quest.id == id && quest.status == QuestStatus::Completed)
+        {
+            return vec![];
+        }
+        page.claiming.push(id.clone());
+        page.error = None;
+        page.captcha = None;
+        vec![Effect::Backend(Command::Discord(
+            DiscordCommand::ClaimQuest { id },
+        ))]
+    }
+
+    /// Opens the page with the captcha Discord asked for before a claim.
+    pub(super) fn quest_captcha(&mut self, id: String, page: String) -> Vec<Effect> {
+        let quests = &mut self.state.quests;
+        if !quests.claiming.contains(&id) {
+            return vec![];
+        }
+        quests.captcha = Some(page.clone());
+        vec![Effect::OpenPage(page)]
+    }
+
+    pub(super) fn quest_claimed(&mut self, id: String, result: Result<(), String>) -> Vec<Effect> {
+        let page = &mut self.state.quests;
+        page.claiming.retain(|claiming| *claiming != id);
+        page.captcha = None;
+        match result {
+            Ok(()) => {
+                if let Some(quest) = page.offered.iter_mut().find(|quest| quest.id == id) {
+                    quest.status = QuestStatus::Claimed;
+                }
+                // The claimed list now holds it.
                 self.load_quests()
             }
             Err(error) => {

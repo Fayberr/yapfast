@@ -5176,6 +5176,8 @@ const GIFT_CODE = "2CG6SV9QtRxerJTgCYNDnU7M";
 const PAID_GIFT_CODE = "AbCdEfGhIjKlMnOp";
 /** Each quest Alice accepted, oldest first, for GET /_control/quest-enrollments. */
 const questEnrollments: Record<string, unknown>[] = [];
+/** Each quest reward Alice claimed, oldest first, for GET /_control/quest-claims. */
+const questClaims: Record<string, unknown>[] = [];
 /** The quests' status for Alice by quest id, which accepting one changes. */
 const questStatus = new Map<string, Record<string, unknown> | null>([
   ["9100000000000000001", null],
@@ -8095,6 +8097,20 @@ async function api(req: Request, path: string, origin: string): Promise<Response
     questEnrollments.push({ id, location: body.location ?? null });
     return json(status);
   }
+  // Claiming a finished quest's reward; one not finished is refused in the
+  // answer's errors, as Discord does.
+  if (method === "POST" && (m = path.match(/^\/quests\/(\d+)\/claim-reward$/))) {
+    const id = m[1]!;
+    const status = questStatus.get(id);
+    if (!status) return json({ message: "Unknown Quest", code: 10000 }, 404);
+    const body: any = await req.json().catch(() => ({}));
+    if (!status.completed_at || status.claimed_at) {
+      return json({ claimed_at: null, entitlements: [], errors: [{ code: "QUEST_NOT_COMPLETED", message: "This quest is not finished." }] });
+    }
+    status.claimed_at = new Date().toISOString();
+    questClaims.push({ id, location: body.location ?? null, platform: body.platform ?? null });
+    return json({ claimed_at: status.claimed_at, entitlements: [], errors: [] });
+  }
   // The Shop: categories with products, and Alice's Orbs.
   if (method === "GET" && path === "/collectibles-categories") {
     const money = (amount: number) => ({ amount, currency: "eur", exponent: 2 });
@@ -9967,6 +9983,9 @@ const server = Bun.serve<SocketData>({
     }
     if (req.method === "GET" && path === "/_control/quest-enrollments") {
       return Response.json(questEnrollments);
+    }
+    if (req.method === "GET" && path === "/_control/quest-claims") {
+      return Response.json(questClaims);
     }
     if (req.method === "GET" && path === "/_control/gift-redeems") {
       return Response.json(giftRedeems);

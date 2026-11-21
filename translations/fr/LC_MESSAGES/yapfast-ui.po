@@ -1017,6 +1017,10 @@ msgstr "Récupérée"
 msgid "Claimed Quests"
 msgstr "Quêtes récupérées"
 
+#: crates/yapfast-iced/src/sidebar/destinations/quests.rs
+msgid "Claiming"
+msgstr "Réclamation"
+
 #: crates/yapfast-iced/src/status.rs
 msgid "CLEAR AFTER"
 msgstr "EFFACER APRÈS"

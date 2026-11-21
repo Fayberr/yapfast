@@ -766,6 +766,26 @@ impl Api {
             .await
     }
 
+    /// Claims the reward of a finished quest, as Quest Home does: `{claimed_at,
+    /// entitlements, errors}`. Discord may ask for a [`Captcha`] first, whose
+    /// solution goes with the next try.
+    pub async fn claim_quest(&self, id: &str, solved: Option<(&Captcha, &str)>) -> Result<Value> {
+        let path = format!("/quests/{}/claim-reward", encode(id));
+        let body = json!({
+            "location": crate::quests::QUEST_HOME_DESKTOP,
+            // Cross platform: the reward isn't tied to a console.
+            "platform": 0,
+            "is_targeted": false,
+        });
+        let mut request = with_json(self.request(Method::POST, &path), &body);
+        if let Some((captcha, solution)) = solved {
+            for (name, value) in captcha.headers(solution) {
+                request = request.header(name, value);
+            }
+        }
+        self.json(request).await
+    }
+
     /// The Shop's collectible categories with their products, bundles
     /// among them: a list of categories.
     pub async fn collectibles_categories(&self) -> Result<Value> {

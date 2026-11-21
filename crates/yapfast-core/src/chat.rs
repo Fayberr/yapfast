@@ -3204,6 +3204,12 @@ pub enum DiscordCommand {
     AcceptQuest {
         id: String,
     },
+    /// Claim the reward of the finished quest with this id.
+    /// [`Event::QuestCaptcha`] follows for each captcha Discord asks for
+    /// first, and [`Event::QuestClaimed`] at the end.
+    ClaimQuest {
+        id: String,
+    },
     /// Load the Shop screen's categories and this account's Orbs.
     /// [`Event::ShopLoaded`] follows.
     LoadShop,
@@ -4759,6 +4765,18 @@ pub enum Event {
     /// Whether [`DiscordCommand::AcceptQuest`] accepted the quest with
     /// this id, or why it didn't.
     QuestAccepted {
+        id: String,
+        result: Result<(), String>,
+    },
+    /// The address of the page with a captcha Discord asked for before
+    /// giving the reward of the quest with this id.
+    QuestCaptcha {
+        id: String,
+        page: String,
+    },
+    /// Whether [`DiscordCommand::ClaimQuest`] claimed the reward of the
+    /// quest with this id, or why it didn't.
+    QuestClaimed {
         id: String,
         result: Result<(), String>,
     },

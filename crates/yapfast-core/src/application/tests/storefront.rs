@@ -160,6 +160,92 @@ fn a_refused_quest_stays_on_offer_and_says_why() {
 }
 
 #[test]
+fn claims_the_reward_of_a_finished_quest_and_opens_its_captcha() {
+    let mut app = online();
+    app.dispatch(Action::OpenDmScreen(DmScreen::Quests));
+    app.apply(Event::QuestsLoaded {
+        result: Ok((
+            vec![
+                quest("1", QuestStatus::Completed),
+                quest("2", QuestStatus::Accepted),
+                quest("3", QuestStatus::Available),
+            ],
+            vec![],
+        )),
+    });
+
+    // Only a finished quest can be claimed.
+    assert!(app.dispatch(Action::ClaimQuest("2".into())).is_empty());
+    assert!(app.dispatch(Action::ClaimQuest("3".into())).is_empty());
+    assert!(app.dispatch(Action::ClaimQuest("7".into())).is_empty());
+
+    assert!(matches!(
+        app.dispatch(Action::ClaimQuest("1".into())).as_slice(),
+        [Effect::Backend(Command::Discord(DiscordCommand::ClaimQuest { id }))] if id == "1"
+    ));
+    assert_eq!(app.state.quests.claiming, ["1"]);
+    assert!(
+        app.dispatch(Action::ClaimQuest("1".into())).is_empty(),
+        "one answer at a time"
+    );
+
+    // A captcha's page opens in the browser, and is kept.
+    let effects = app.apply(Event::QuestCaptcha {
+        id: "1".into(),
+        page: "http://127.0.0.1:9/".into(),
+    });
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::OpenPage(page)] if page == "http://127.0.0.1:9/"
+    ));
+    assert_eq!(
+        app.state.quests.captcha.as_deref(),
+        Some("http://127.0.0.1:9/")
+    );
+    // One for a quest that isn't being claimed is ignored.
+    assert!(
+        app.apply(Event::QuestCaptcha {
+            id: "2".into(),
+            page: "http://127.0.0.1:9/".into(),
+        })
+        .is_empty()
+    );
+
+    // Claimed, it shows as such at once, and Discord's lists are asked for.
+    let effects = app.apply(Event::QuestClaimed {
+        id: "1".into(),
+        result: Ok(()),
+    });
+    assert!(asks(&effects, |c| matches!(c, DiscordCommand::LoadQuests)));
+    let page = &app.state.quests;
+    assert!(page.claiming.is_empty());
+    assert_eq!(page.captcha, None);
+    assert_eq!(page.offered[0].status, QuestStatus::Claimed);
+}
+
+#[test]
+fn a_refused_claim_stays_claimable_and_says_why() {
+    let mut app = online();
+    app.dispatch(Action::OpenDmScreen(DmScreen::Quests));
+    app.apply(Event::QuestsLoaded {
+        result: Ok((vec![quest("1", QuestStatus::Completed)], vec![])),
+    });
+    app.dispatch(Action::ClaimQuest("1".into()));
+    app.apply(Event::QuestClaimed {
+        id: "1".into(),
+        result: Err("Couldn't claim the reward: no.".into()),
+    });
+    let page = &app.state.quests;
+    assert_eq!(
+        page.error.as_deref(),
+        Some("Couldn't claim the reward: no.")
+    );
+    assert!(page.claiming.is_empty());
+    assert_eq!(page.offered[0].status, QuestStatus::Completed);
+    assert!(!app.dispatch(Action::ClaimQuest("1".into())).is_empty());
+}
+
+#[test]
 fn opening_the_shop_loads_its_categories_and_orbs() {
     let mut app = online();
     let effects = app.dispatch(Action::OpenDmScreen(DmScreen::Shop));

@@ -74,6 +74,24 @@ async fn lists_and_accepts_quests() {
     // A quest already accepted, or one Discord doesn't know, is refused.
     assert!(discord.enroll_quest(&first.id).await.is_err());
     assert!(discord.enroll_quest("1").await.is_err());
+
+    // A quest that is done is claimed, and moves to the claimed ones; one
+    // that is not done is refused with Discord's reason.
+    let done = offered
+        .iter()
+        .find(|quest| quest.status == Status::Completed)
+        .expect("a finished quest")
+        .id
+        .clone();
+    assert!(discord.claim_quest(&first.id, |_| {}).await.is_err());
+    discord.claim_quest(&done, |_| {}).await.unwrap();
+    let claims: serde_json::Value =
+        serde_json::from_str(&control(server, "GET", "/_control/quest-claims", "")).unwrap();
+    let claims = claims.as_array().unwrap();
+    assert_eq!(claims.len(), 1);
+    assert_eq!(claims[0]["id"], done.as_str());
+    assert_eq!(claims[0]["location"], QUEST_HOME_DESKTOP);
+    assert!(discord.claim_quest(&done, |_| {}).await.is_err());
 }
 
 #[tokio::test(flavor = "multi_thread")]

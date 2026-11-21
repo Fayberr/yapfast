@@ -1931,10 +1931,12 @@ pub enum Action {
     /// Show a screen of the DM list in place of the conversation.
     OpenDmScreen(DmScreen),
     /// Load the Quests screen's quests again, or the Shop's categories;
-    /// accept a quest that is on offer, by its id.
+    /// accept a quest that is on offer, by its id, or claim the reward of
+    /// a finished one.
     RefreshQuests,
     RefreshShop,
     AcceptQuest(String),
+    ClaimQuest(String),
     /// Show Browse Channels for the Discord server navigated to in place
     /// of its conversation.
     BrowseChannels,
@@ -3490,6 +3492,7 @@ impl Application {
             Action::RefreshQuests => self.load_quests(),
             Action::RefreshShop => self.load_shop(),
             Action::AcceptQuest(id) => self.accept_quest(id),
+            Action::ClaimQuest(id) => self.claim_quest(id),
             Action::BrowseChannels => self.open_browse(),
             Action::BrowseFollow { room, follow } => self.browse_follow(room, follow),
             Action::MessagePerson(user) => self.message_person(user),
@@ -4665,6 +4668,8 @@ impl Application {
             } => return self.event_interest_set(event, interested, result),
             Event::QuestsLoaded { result } => return self.quests_loaded(result),
             Event::QuestAccepted { id, result } => return self.quest_accepted(id, result),
+            Event::QuestCaptcha { id, page } => return self.quest_captcha(id, page),
+            Event::QuestClaimed { id, result } => return self.quest_claimed(id, result),
             Event::ShopLoaded { result } => return self.shop_loaded(result),
             Event::GiftResolved { code, result } => return self.gift_resolved(code, result),
             Event::GiftRedeemed { code, result } => return self.gift_redeemed(code, result),

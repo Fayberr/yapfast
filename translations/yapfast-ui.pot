@@ -1018,6 +1018,10 @@ msgstr ""
 msgid "Claimed Quests"
 msgstr ""
 
+#: crates/yapfast-iced/src/sidebar/destinations/quests.rs
+msgid "Claiming"
+msgstr ""
+
 #: crates/yapfast-iced/src/status.rs
 msgid "CLEAR AFTER"
 msgstr ""

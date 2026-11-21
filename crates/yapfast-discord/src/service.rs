@@ -3265,6 +3265,27 @@ impl Discord {
         self.api.enroll_quest(id).await.map(drop)
     }
 
+    /// Claims the reward of the quest `id`, showing each captcha Discord
+    /// asks for first: `captcha` hears its page's address. Discord may
+    /// answer with the errors that kept the reward from being given.
+    pub async fn claim_quest(&self, id: &str, captcha: impl FnMut(&str)) -> Result<()> {
+        let api = &self.api;
+        let answer = crate::captcha::solving(
+            |solved| async move {
+                let solved = solved
+                    .as_ref()
+                    .map(|(captcha, solution)| (captcha, solution.as_str()));
+                api.claim_quest(id, solved).await
+            },
+            captcha,
+        )
+        .await?;
+        match crate::quests::claim_error(&answer) {
+            Some(error) => Err(anyhow!(error)),
+            None => Ok(()),
+        }
+    }
+
     /// The Shop's categories, and this account's Orbs when Discord says
     /// them: the Shop shows without the balance.
     pub async fn shop(&self) -> Result<(Vec<crate::shop::Category>, Option<u64>)> {

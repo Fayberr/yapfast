@@ -1300,6 +1300,40 @@ pub(super) fn command(
         }
         return None;
     }
+    if let Command::Discord(DiscordCommand::ClaimQuest { id }) = command {
+        match discord {
+            Ok(discord) => {
+                let (discord, events) = (discord.clone(), events.clone());
+                tokio::spawn(async move {
+                    let captchas = events.clone();
+                    let shown = id.clone();
+                    let result = discord
+                        .claim_quest(&id, |page| {
+                            let _ = captchas.send(Event::QuestCaptcha {
+                                id: shown.clone(),
+                                page: page.to_owned(),
+                            });
+                        })
+                        .await
+                        .map_err(|error| {
+                            tracing::warn!(
+                                error = format!("{error:#}"),
+                                "could not claim a quest's reward"
+                            );
+                            format!("Couldn't claim the reward: {error}")
+                        });
+                    let _ = events.send(Event::QuestClaimed { id, result });
+                });
+            }
+            Err(error) => {
+                let _ = events.send(Event::QuestClaimed {
+                    id,
+                    result: Err(error.into()),
+                });
+            }
+        }
+        return None;
+    }
     if let Command::Discord(DiscordCommand::LoadShop) = command {
         match discord {
             Ok(discord) => {

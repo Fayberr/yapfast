@@ -1017,6 +1017,10 @@ msgstr "Abgeholt"
 msgid "Claimed Quests"
 msgstr "Abgeholte Quests"
 
+#: crates/yapfast-iced/src/sidebar/destinations/quests.rs
+msgid "Claiming"
+msgstr "Wird abgeholt"
+
 #: crates/yapfast-iced/src/status.rs
 msgid "CLEAR AFTER"
 msgstr "LÖSCHEN NACH"
