@@ -250,10 +250,35 @@ impl Application {
         server: String,
         result: Result<ScreeningForm, String>,
     ) -> Vec<Effect> {
-        let Some(dialog) = self
+        let waiting = self
             .screening()
-            .filter(|dialog| dialog.server == server && dialog.loading)
-        else {
+            .is_some_and(|dialog| dialog.server == server && dialog.loading);
+        if !waiting {
+            // A server joined from Discovery asks for nothing until its form
+            // is read, and one without a form answers with an error, which
+            // is no news. A form it has is shown as a joined invite's.
+            if self.state.join.is_none()
+                && self
+                    .state
+                    .discover
+                    .joined
+                    .iter()
+                    .any(|id| discord::server_id(id) == server)
+                && let Ok(form) = result
+                && !form.fields.is_empty()
+            {
+                self.state.join = Some(JoinDialog {
+                    form: Some(ScreeningDialog {
+                        server,
+                        form: Some(form),
+                        ..ScreeningDialog::default()
+                    }),
+                    ..JoinDialog::default()
+                });
+            }
+            return vec![];
+        }
+        let Some(dialog) = self.screening() else {
             return vec![];
         };
         dialog.loading = false;

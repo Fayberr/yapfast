@@ -220,7 +220,11 @@ impl Dialogs {
         match &state.join {
             Some(join) if local.join.is_none() => {
                 local.join = Some(String::new());
-                focus = Some(if join.from_link { NOBODY } else { JOIN_FIELD });
+                focus = Some(if join.from_link || join.form.is_some() {
+                    NOBODY
+                } else {
+                    JOIN_FIELD
+                });
             }
             Some(_) => {}
             None => local.join = None,
