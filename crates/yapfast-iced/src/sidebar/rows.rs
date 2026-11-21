@@ -21,9 +21,7 @@ use crate::{
     pictures::{GroupIcon, Icon, room_group_icon},
 };
 
-use super::{
-    BROWSE_AFTER, BROWSE_GAP, BROWSE_TOP, DM_ROW, GAP, HEADING, NAV_ROW, PERSON, ROW,
-};
+use super::{BROWSE_AFTER, BROWSE_GAP, BROWSE_TOP, DM_ROW, GAP, HEADING, NAV_ROW, PERSON, ROW};
 
 /// A conversation's row.
 #[derive(Clone, Debug, PartialEq)]
