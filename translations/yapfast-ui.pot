@@ -574,7 +574,7 @@ msgstr ""
 msgid "Apply Filters"
 msgstr ""
 
-#: crates/yapfast-iced/src/menus.rs crates/yapfast-iced/src/place_menus.rs
+#: crates/yapfast-iced/src/composer/tools.rs crates/yapfast-iced/src/menus.rs crates/yapfast-iced/src/place_menus.rs
 msgid "Apps"
 msgstr ""
 
@@ -2228,6 +2228,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/picker/kit.rs
 msgid "GIFs"
+msgstr ""
+
+#: crates/yapfast-iced/src/composer/tools.rs
+msgid "Gift"
 msgstr ""
 
 #: crates/yapfast-iced/src/sidebar/destinations/mod.rs crates/yapfast-iced/src/sidebar/destinations/nitro.rs
