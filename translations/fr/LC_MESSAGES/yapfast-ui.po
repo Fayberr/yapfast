@@ -4767,10 +4767,6 @@ msgstr "Résultats de recherche"
 msgid "Search Roles"
 msgstr "Rechercher des rôles"
 
-#: crates/yapfast-iced/src/settings/mod.rs
-msgid "Search settings"
-msgstr "Rechercher"
-
 #: crates/yapfast-iced/src/sidebar/destinations/shop.rs
 msgid "Search the Shop"
 msgstr "Rechercher dans la boutique"
@@ -7450,6 +7446,11 @@ msgstr "AM"
 msgctxt "period"
 msgid "PM"
 msgstr "PM"
+
+#: crates/yapfast-iced/src/settings/mod.rs
+msgctxt "settings search"
+msgid "Search"
+msgstr "Rechercher"
 
 #: crates/yapfast-core/src/clock.rs
 msgctxt "short date"
