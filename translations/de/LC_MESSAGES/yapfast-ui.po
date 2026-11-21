@@ -1625,7 +1625,7 @@ msgstr "Discord · nicht Ende-zu-Ende-verschlüsselt. Enter zum Senden, Umschalt
 msgid "discord:// links from other apps and shortcuts open here instead of Discord. Turning it off gives them back to the app that had them."
 msgstr "discord://-Links aus anderen Apps und Verknüpfungen werden hier statt in Discord geöffnet. Wenn du das ausschaltest, gehen sie an die App zurück, die sie vorher hatte."
 
-#: crates/yapfast-iced/src/sidebar/destinations/mod.rs
+#: crates/yapfast-iced/src/sidebar/destinations/mod.rs crates/yapfast-iced/src/window_bar.rs
 msgid "Discover"
 msgstr "Entdecken"
 
@@ -2197,7 +2197,7 @@ msgstr "Freundschaftsanfrage gesendet"
 msgid "Friend requests and messages from people you don't know show up here."
 msgstr "Freundschaftsanfragen und Nachrichten von Personen, die du nicht kennst, erscheinen hier."
 
-#: crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/profile/look.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/sidebar/channels.rs
+#: crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/profile/look.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/sidebar/channels.rs crates/yapfast-iced/src/window_bar.rs
 msgid "Friends"
 msgstr "Freunde"
 
@@ -2311,7 +2311,7 @@ msgstr "Zum Server"
 
 #: crates/yapfast-iced/src/friends/mod.rs
 msgid "Go to Settings"
-msgstr "Zu den Einstellungen"
+msgstr "Einstellungen aufrufen"
 
 #: crates/yapfast-iced/src/uploads.rs
 msgid "Got It"
@@ -3231,7 +3231,7 @@ msgstr "Nachricht enthält"
 msgid "Message length"
 msgstr "Nachrichtenlänge"
 
-#: crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/sidebar/channels.rs
+#: crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/sidebar/channels.rs crates/yapfast-iced/src/window_bar.rs
 msgid "Message Requests"
 msgstr "Nachrichtenanfragen"
 
@@ -4791,7 +4791,7 @@ msgstr "BILDSCHIRME"
 msgid "Scroll to top"
 msgstr "Nach oben scrollen"
 
-#: crates/yapfast-iced/src/bot_select.rs crates/yapfast-iced/src/forward.rs crates/yapfast-iced/src/friends/mod.rs crates/yapfast-iced/src/profile/editor/menus.rs crates/yapfast-iced/src/server_settings/moderation.rs
+#: crates/yapfast-iced/src/bot_select.rs crates/yapfast-iced/src/forward.rs crates/yapfast-iced/src/profile/editor/menus.rs crates/yapfast-iced/src/server_settings/moderation.rs
 msgid "Search"
 msgstr "Suchen"
 
@@ -7445,6 +7445,11 @@ msgstr "• Eingabe:"
 msgctxt "12-hour time"
 msgid "{time} {period}"
 msgstr "{time} {period}"
+
+#: crates/yapfast-iced/src/friends/mod.rs
+msgctxt "friends search"
+msgid "Search"
+msgstr "Suche"
 
 #: crates/yapfast-core/src/clock.rs
 msgctxt "long date"

@@ -196,6 +196,13 @@ pub fn friends_pictures(app: &App) -> Vec<String> {
             let cosmetics = app.client.state().cosmetics;
             for friend in &shown[first..last] {
                 urls.extend(friend.avatar.clone());
+                urls.extend(
+                    friend
+                        .tag
+                        .as_ref()
+                        .and_then(|tag| tag.badge.as_deref())
+                        .map(str::to_owned),
+                );
                 // The decoration's still, and the animated one it plays
                 // while the friend is pointed at.
                 if let Some(still) = cosmetics.decoration(friend.decoration.as_deref()) {
@@ -433,19 +440,22 @@ fn friends_list<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
     let shown = friends_shown(ctx);
     // Discord's field: a 1 px border, a magnifier, 40 px in all.
     let (ink, hint, selection) = (theme.text, theme.muted, theme.selection);
-    let input = iced::widget::text_input(tr("Search"), &ctx.friends.filter)
-        .id(iced::widget::Id::new(SEARCH))
-        .size(15)
-        .padding(0)
-        .on_input(|text| Message::Friends(Event::Filter(text)))
-        .style(move |_, _| iced::widget::text_input::Style {
-            background: iced::Color::TRANSPARENT.into(),
-            border: iced::Border::default(),
-            icon: ink,
-            placeholder: hint,
-            value: ink,
-            selection,
-        });
+    let input = iced::widget::text_input(
+        yapfast_core::i18n::tr_ctx("friends search", "Search"),
+        &ctx.friends.filter,
+    )
+    .id(iced::widget::Id::new(SEARCH))
+    .size(15)
+    .padding(0)
+    .on_input(|text| Message::Friends(Event::Filter(text)))
+    .style(move |_, _| iced::widget::text_input::Style {
+        background: iced::Color::TRANSPARENT.into(),
+        border: iced::Border::default(),
+        icon: ink,
+        placeholder: hint,
+        value: ink,
+        selection,
+    });
     let (ground, line) = if theme.bonfire {
         (crate::style::hex(0x16161a), crate::style::hex(0x303035))
     } else {
@@ -464,7 +474,7 @@ fn friends_list<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
     // Discord's heading is white, mixed case, set lower, with an en dash.
     let heading = container(
         text(format!(
-            "{} \u{2014} {}",
+            "{} \u{2013} {}",
             if ctx.friends.all {
                 tr("All Friends")
             } else {
@@ -537,39 +547,53 @@ fn friends_list<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
 /// the settings. It can be closed.
 fn blocked_note<'a>(ctx: crate::ctx::Ctx<'a>) -> Element<'a, Message> {
     let theme = ctx.look.theme;
+    let line = text::LineHeight::Absolute(18.0.into());
     let link = button(
         text(tr("Go to Settings"))
-            .size(15)
+            .size(13)
             .font(SEMIBOLD)
+            .line_height(line)
             .color(theme.link),
     )
     .padding(0)
     .on_press(Message::Friends(Event::Settings))
     .style(controls::ink_style(theme.link, theme.link));
+    // Discord's note: 13 px words over two lines where its link doesn't fit
+    // beside them, on a ground darker than the page, 68 px tall.
+    let words = row![
+        text(tr("Looking for accounts you've blocked or ignored?"))
+            .size(13)
+            .font(SEMIBOLD)
+            .line_height(line)
+            .color(theme.text),
+        link
+    ]
+    .spacing(4)
+    .wrap()
+    .vertical_spacing(0);
+    let (bonfire, raised, rule) = (theme.bonfire, theme.raised, theme.line);
     let note = container(
         row![
-            ctx.look.glyph(Icon::CircleInfoFilled, 20, theme.secondary),
-            row![
-                text(tr("Looking for accounts you've blocked or ignored?"))
-                    .size(15)
-                    .font(SEMIBOLD)
-                    .color(theme.text),
-                link
-            ]
-            .spacing(4)
-            .width(Length::Fill),
+            ctx.look.glyph(Icon::CircleInfoFilled, 18, theme.secondary),
+            container(words).width(Length::Fill),
             ctx.look
                 .icon_button(Icon::X, "Dismiss", Message::Friends(Event::DismissNote))
-                .size(28.0, 18)
+                .size(28.0, 16)
         ]
-        .spacing(12)
+        .spacing(8)
         .align_y(Alignment::Center),
     )
-    .padding(Padding::ZERO.left(16).right(12))
-    .height(59)
+    .padding(Padding::ZERO.left(17).right(14))
+    .height(68)
     .width(Length::Fill)
     .align_y(Alignment::Center)
-    .style(move |_| crate::style::outlined(theme.raised, theme.line, 8.0));
+    .style(move |_| {
+        if bonfire {
+            crate::style::rounded(crate::style::hex(0x121214), 8.0)
+        } else {
+            crate::style::outlined(raised, rule, 8.0)
+        }
+    });
     container(note)
         .padding(Padding::ZERO.left(6).right(20))
         .into()
@@ -691,6 +715,24 @@ fn friend_row<'a>(
         .size(16)
         .font(BOLD)
         .color(theme.text);
+    // The server tag they wear sits beside the name, as in the DM list.
+    let mut name = row![name].spacing(4).align_y(Alignment::Center);
+    if let Some(tag) = &friend.tag {
+        name = name.push(ctx.tag_chip(
+            &tag.text,
+            tag.badge.as_deref(),
+            crate::looks::Chip {
+                size: 12.0,
+                font: SEMIBOLD,
+                height: 16.0,
+                pad: 4.0,
+                radius: 4.0,
+                fill: crate::style::CHIP,
+                ink: theme.text,
+            },
+            1.0,
+        ));
+    }
     let status = Status::of(friend.activity.as_deref());
     let sub: Element<'a, Message> = match (spot, status.is_empty()) {
         (Some(spot), true) => ctx.voice_spot(spot, 13.0, false),

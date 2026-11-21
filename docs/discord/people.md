@@ -87,7 +87,8 @@ its tooltip. Clicking it goes to the channel without joining it. It comes from
 the voice states the channel list already keeps, so it shows only servers both
 share and channels this account sees. DM calls stay out, as in Discord.
 
-When the friends page is at least 1000px wide, Active Now sits in a 360px
+When the friends page is at least 900px wide (Discord shows it at 901px; where it
+hides isn't measured), Active Now sits in a 360px
 column at its right, as on Discord's friends page, and the list keeps to the
 left of it. Its cards follow Discord's NowPlayingViewStore: friends in one
 server's voice channel share a card, then those in one game party (the
