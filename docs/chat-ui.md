@@ -289,9 +289,13 @@ errors make it taller than the minimum window. SSO and OAuth are still pending.
   pictures; a section reached before warming finishes can still show placeholders.
   A drag that changed the width keeps it in
   `layout.json` (`picker_width`), written once the drags have stopped for a
-  second, and it comes back at the next start. Skin tone offers six variants
-  where the emoji font has them and keeps the choice on this device. A custom
-  emoji's footer identifies its server with the server's name and icon.
+  second, and it comes back at the next start. Skin tone, the hand beside the
+  search field, offers six variants where the emoji font has them and keeps
+  the choice on this device. A custom emoji's footer identifies its server
+  with the server's name. The panel is Discord's: content inside a 1 px edge,
+  a 40 px search field (a 1 px line at rest, a 2 px accent ring while it has
+  the keys), a line under the header, 40 px emoji in 48 px cells and a darker
+  rail and foot.
   When the current server has ranked custom emoji, Popular in the server's
   name lists them in Discord's order above the rest of the picker.
   Add Emoji in the composer's picker offers the servers where the account can

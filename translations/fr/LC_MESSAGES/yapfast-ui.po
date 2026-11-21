@@ -5155,6 +5155,10 @@ msgstr "Se déconnecter"
 msgid "SIGNALS"
 msgstr "SIGNAUX"
 
+#: crates/yapfast-iced/src/picker/emoji.rs
+msgid "Skin tone"
+msgstr "Teinte de peau"
+
 #: crates/yapfast-iced/src/settings/updates.rs
 msgid "Skip this version"
 msgstr "Ignorer cette version"

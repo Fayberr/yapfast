@@ -5156,6 +5156,10 @@ msgstr ""
 msgid "SIGNALS"
 msgstr ""
 
+#: crates/yapfast-iced/src/picker/emoji.rs
+msgid "Skin tone"
+msgstr ""
+
 #: crates/yapfast-iced/src/settings/updates.rs
 msgid "Skip this version"
 msgstr ""
