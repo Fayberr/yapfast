@@ -2229,11 +2229,9 @@ pub enum Action {
     ToggleEventInterest,
     CloseEvent,
     /// Open a clicked gift link, by its code; redeem the gift it
-    /// shows, when asked; open it in the browser, for a gift only Discord
-    /// can redeem; or close its dialog.
+    /// shows, when asked; or close its dialog.
     OpenGiftLink(String),
     RedeemGift,
-    OpenGiftInBrowser,
     CloseGift,
     /// Open the dialog that makes a channel of this kind, from a Discord
     /// server's menu, by its server id, or one like a channel in its
@@ -2283,6 +2281,8 @@ pub enum Action {
     UndoProfileEdits,
     SaveProfile,
     UnlockNitro,
+    /// Leave the profile editor for the Shop, which sets its decorations.
+    OpenProfileShop,
     CloseProfileEditor,
     /// Open a Discord server's settings, by its server id or one of its
     /// channels' room ids; go to another page; change a text of the page,
@@ -3939,7 +3939,6 @@ impl Application {
             }
             Action::OpenGiftLink(code) => self.open_gift_link(code),
             Action::RedeemGift => self.redeem_gift(),
-            Action::OpenGiftInBrowser => self.open_gift_in_browser(),
             Action::CloseGift => {
                 self.state.gift = None;
                 vec![]
@@ -3995,6 +3994,7 @@ impl Application {
             }
             Action::SaveProfile => self.save_profile(),
             Action::UnlockNitro => self.unlock_nitro(),
+            Action::OpenProfileShop => self.open_profile_shop(),
             Action::CloseProfileEditor => {
                 self.state.profile_editor_changed();
                 self.state.profile_editor = None;
