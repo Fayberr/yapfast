@@ -190,6 +190,10 @@ msgstr ""
 msgid "A display name can be up to {} characters."
 msgstr ""
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "A few questions first"
+msgstr ""
+
 #: crates/yapfast-iced/src/settings/pages/messages.rs
 msgid "A gem by the name of each member boosting their Discord server, in the member list."
 msgstr ""
@@ -1162,7 +1166,7 @@ msgstr ""
 msgid "CLOCK"
 msgstr ""
 
-#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/forum.rs crates/yapfast-iced/src/image_viewer.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/profile/editor/mod.rs crates/yapfast-iced/src/profile/name_style.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/thread.rs crates/yapfast-iced-kit/src/dialog.rs
+#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/forum.rs crates/yapfast-iced/src/image_viewer.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/profile/editor/mod.rs crates/yapfast-iced/src/profile/name_style.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/server_dialogs/screening.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/thread.rs crates/yapfast-iced-kit/src/dialog.rs
 msgid "Close"
 msgstr ""
 
@@ -2470,6 +2474,10 @@ msgstr ""
 msgid "Gummy"
 msgstr ""
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Handing in your answers..."
+msgstr ""
+
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Happening now"
 msgstr ""
@@ -2582,6 +2590,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/server_settings/ownership.rs
 msgid "I acknowledge that by transferring ownership of this server to {}, it officially belongs to them."
+msgstr ""
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "I have read and agree to the rules"
 msgstr ""
 
 #: crates/yapfast-iced/src/server_settings/profile.rs
@@ -3150,6 +3162,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/profile/look.rs
 msgid "Loading the profile..."
+msgstr ""
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Loading the server's questions..."
 msgstr ""
 
 #: crates/yapfast-iced/src/profile/look.rs
@@ -3996,6 +4012,10 @@ msgstr ""
 msgid "Not enough Orbs"
 msgstr ""
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Not now"
+msgstr ""
+
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Not sending"
 msgstr ""
@@ -4212,10 +4232,6 @@ msgstr ""
 msgid "Open in Browser"
 msgstr ""
 
-#: crates/yapfast-iced/src/server_dialogs.rs
-msgid "Open in browser"
-msgstr ""
-
 #: crates/yapfast-iced/src/components.rs
 msgid "Open in Discord"
 msgstr ""
@@ -4254,6 +4270,10 @@ msgstr ""
 
 #: src/tray.rs
 msgid "Open Yapfast"
+msgstr ""
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Optional"
 msgstr ""
 
 #: crates/yapfast-iced/src/server_dialogs.rs
@@ -5840,7 +5860,7 @@ msgstr ""
 msgid "Su"
 msgstr ""
 
-#: crates/yapfast-iced/src/bot_modal.rs
+#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/server_dialogs/screening.rs
 msgid "Submit"
 msgstr ""
 
@@ -6098,6 +6118,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/tag_card.rs
 msgid "The server has limited who can see this profile."
+msgstr ""
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "The server's questions did not load."
 msgstr ""
 
 #: crates/yapfast-iced/src/settings/account.rs
@@ -6372,7 +6396,7 @@ msgstr ""
 msgid "Try adding authorType: user to your search."
 msgstr ""
 
-#: crates/yapfast-iced/src/settings/account.rs crates/yapfast-iced/src/signin.rs
+#: crates/yapfast-iced/src/server_dialogs/screening.rs crates/yapfast-iced/src/settings/account.rs crates/yapfast-iced/src/signin.rs
 msgid "Try again"
 msgstr ""
 
@@ -7212,10 +7236,6 @@ msgstr ""
 msgid "You installed Yapfast with {}, so update it there."
 msgstr ""
 
-#: crates/yapfast-iced/src/server_dialogs.rs
-msgid "You joined. This server asks new members to fill in a form before they can talk, which Yapfast can't show yet. Finish it in Discord's web app."
-msgstr ""
-
 #: crates/yapfast-iced/src/call/details.rs
 msgid "You may notice delayed audio at 250 ms or higher. If the problem persists, disconnect and try again.{}"
 msgstr ""
@@ -7286,6 +7306,10 @@ msgstr ""
 
 #: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
 msgid "Your account has no Nitro. The plans below add perks."
+msgstr ""
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Your answers are with the server's moderators. You can talk as soon as they let you in."
 msgstr ""
 
 #: crates/yapfast-iced/src/boost_goal.rs

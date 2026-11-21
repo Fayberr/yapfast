@@ -3200,6 +3200,27 @@ impl Discord {
         Ok(invite::Joined::of(&answer, preview))
     }
 
+    /// The form a server asks the account to fill in after joining by
+    /// `code`; see [`Api::member_verification`].
+    pub async fn member_form(&self, guild: &str, code: &str) -> Result<crate::screening::Form> {
+        let answer = self.api.member_verification(guild, code).await?;
+        crate::screening::Form::of(&answer)
+            .context("This server's form has nothing Yapfast can show.")
+    }
+
+    /// Hands in a server's form, each field with its response; see
+    /// [`Api::submit_member_verification`].
+    pub async fn submit_member_form(
+        &self,
+        guild: &str,
+        version: &str,
+        answered: &[(crate::screening::Field, crate::screening::Response)],
+    ) -> Result<crate::screening::Review> {
+        let body = crate::screening::body(version, answered);
+        let answer = self.api.submit_member_verification(guild, &body).await?;
+        Ok(crate::screening::Review::of(&answer))
+    }
+
     /// A server's preview, by its id; see [`Api::guild_preview`].
     pub async fn guild_preview(&self, guild: &str) -> Result<guild::Preview> {
         let preview = self.api.guild_preview(guild).await?;

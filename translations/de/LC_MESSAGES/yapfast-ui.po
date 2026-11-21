@@ -189,6 +189,10 @@ msgstr "Eine Kopie von {} mit allen Einstellungen und Berechtigungen, in derselb
 msgid "A display name can be up to {} characters."
 msgstr "Ein Anzeigename darf bis zu {} Zeichen lang sein."
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "A few questions first"
+msgstr "Zuerst ein paar Fragen"
+
 #: crates/yapfast-iced/src/settings/pages/messages.rs
 msgid "A gem by the name of each member boosting their Discord server, in the member list."
 msgstr "Ein Edelstein mit dem Namen jedes Mitglieds, das den Discord-Server boostet, in der Mitgliederliste."
@@ -1161,7 +1165,7 @@ msgstr "Klicke, um die Neuerungen zu sehen."
 msgid "CLOCK"
 msgstr "UHRZEIT"
 
-#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/forum.rs crates/yapfast-iced/src/image_viewer.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/profile/editor/mod.rs crates/yapfast-iced/src/profile/name_style.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/thread.rs crates/yapfast-iced-kit/src/dialog.rs
+#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/forum.rs crates/yapfast-iced/src/image_viewer.rs crates/yapfast-iced/src/link_dialogs.rs crates/yapfast-iced/src/profile/editor/mod.rs crates/yapfast-iced/src/profile/name_style.rs crates/yapfast-iced/src/search_filters.rs crates/yapfast-iced/src/server_dialogs/create.rs crates/yapfast-iced/src/server_dialogs/screening.rs crates/yapfast-iced/src/server_dialogs.rs crates/yapfast-iced/src/thread.rs crates/yapfast-iced-kit/src/dialog.rs
 msgid "Close"
 msgstr "Schließen"
 
@@ -2469,6 +2473,10 @@ msgstr "Gruppe"
 msgid "Gummy"
 msgstr "Gummy"
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Handing in your answers..."
+msgstr "Deine Antworten werden eingereicht..."
+
 #: crates/yapfast-iced/src/place_menus.rs
 msgid "Happening now"
 msgstr "Gerade aktiv"
@@ -2582,6 +2590,10 @@ msgstr "Wie laut Soundboard-Sounds in Discord-Anrufen abgespielt werden, deine u
 #: crates/yapfast-iced/src/server_settings/ownership.rs
 msgid "I acknowledge that by transferring ownership of this server to {}, it officially belongs to them."
 msgstr "Ich bestätige, dass der Server mit der Übertragung des Eigentums an {} offiziell diesem Mitglied gehört."
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "I have read and agree to the rules"
+msgstr "Ich habe die Regeln gelesen und stimme ihnen zu"
 
 #: crates/yapfast-iced/src/server_settings/profile.rs
 msgid "ICON"
@@ -3150,6 +3162,10 @@ msgstr "Lade das vollständige Bild..."
 #: crates/yapfast-iced/src/profile/look.rs
 msgid "Loading the profile..."
 msgstr "Lade das Profil..."
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Loading the server's questions..."
+msgstr "Die Fragen des Servers werden geladen..."
 
 #: crates/yapfast-iced/src/profile/look.rs
 msgid "Loading the wishlist..."
@@ -3995,6 +4011,10 @@ msgstr "Noch nicht verfügbar."
 msgid "Not enough Orbs"
 msgstr "Nicht genug Orbs"
 
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Not now"
+msgstr "Jetzt nicht"
+
 #: crates/yapfast-iced/src/settings/voice.rs
 msgid "Not sending"
 msgstr "Wird nicht gesendet"
@@ -4211,10 +4231,6 @@ msgstr "GIF-Auswahl öffnen"
 msgid "Open in Browser"
 msgstr "Im Browser öffnen"
 
-#: crates/yapfast-iced/src/server_dialogs.rs
-msgid "Open in browser"
-msgstr "Im Browser öffnen"
-
 #: crates/yapfast-iced/src/components.rs
 msgid "Open in Discord"
 msgstr "In Discord öffnen"
@@ -4254,6 +4270,10 @@ msgstr "Öffnen, um die Nachricht zu lesen"
 #: src/tray.rs
 msgid "Open Yapfast"
 msgstr "Yapfast öffnen"
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Optional"
+msgstr "Optional"
 
 #: crates/yapfast-iced/src/server_dialogs.rs
 msgid "Or, send a server invite link to a friend"
@@ -5839,7 +5859,7 @@ msgstr "Lerngruppe"
 msgid "Su"
 msgstr "So"
 
-#: crates/yapfast-iced/src/bot_modal.rs
+#: crates/yapfast-iced/src/bot_modal.rs crates/yapfast-iced/src/server_dialogs/screening.rs
 msgid "Submit"
 msgstr "Absenden"
 
@@ -6098,6 +6118,10 @@ msgstr "Die Prüfsummen des Releases sind kein Text."
 #: crates/yapfast-iced/src/tag_card.rs
 msgid "The server has limited who can see this profile."
 msgstr "Der Server hat eingeschränkt, wer dieses Profil sehen kann."
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "The server's questions did not load."
+msgstr "Die Fragen des Servers konnten nicht geladen werden."
 
 #: crates/yapfast-iced/src/settings/account.rs
 msgid "The service's own sign-in page opens in your browser. When you are done there, read the list again."
@@ -6371,7 +6395,7 @@ msgstr "Wahr"
 msgid "Try adding authorType: user to your search."
 msgstr "Versuche, authorType: user zu deiner Suche hinzuzufügen."
 
-#: crates/yapfast-iced/src/settings/account.rs crates/yapfast-iced/src/signin.rs
+#: crates/yapfast-iced/src/server_dialogs/screening.rs crates/yapfast-iced/src/settings/account.rs crates/yapfast-iced/src/signin.rs
 msgid "Try again"
 msgstr "Erneut versuchen"
 
@@ -7211,10 +7235,6 @@ msgstr "Du hast noch niemanden gebannt ...\naber wenn es sein muss, zögere nich
 msgid "You installed Yapfast with {}, so update it there."
 msgstr "Du hast Yapfast über {} installiert, aktualisiere es also dort."
 
-#: crates/yapfast-iced/src/server_dialogs.rs
-msgid "You joined. This server asks new members to fill in a form before they can talk, which Yapfast can't show yet. Finish it in Discord's web app."
-msgstr "Du bist beigetreten. Dieser Server verlangt von neuen Mitgliedern ein Formular, bevor sie sprechen können, das Yapfast noch nicht anzeigen kann. Fülle es in der Discord-Web-App aus."
-
 #: crates/yapfast-iced/src/call/details.rs
 msgid "You may notice delayed audio at 250 ms or higher. If the problem persists, disconnect and try again.{}"
 msgstr "Ab 250 ms oder mehr kann der Ton verzögert klingen. Falls das Problem bleibt, trenne die Verbindung und versuche es erneut.{}"
@@ -7286,6 +7306,10 @@ msgstr "Dein Konto hat Nitro."
 #: crates/yapfast-iced/src/sidebar/destinations/nitro.rs
 msgid "Your account has no Nitro. The plans below add perks."
 msgstr "Dein Konto hat kein Nitro. Die Abos unten bringen dir Vorteile."
+
+#: crates/yapfast-iced/src/server_dialogs/screening.rs
+msgid "Your answers are with the server's moderators. You can talk as soon as they let you in."
+msgstr "Deine Antworten liegen bei den Moderatoren des Servers. Du kannst schreiben, sobald sie dich einlassen."
 
 #: crates/yapfast-iced/src/boost_goal.rs
 msgid "Your boost was added."
